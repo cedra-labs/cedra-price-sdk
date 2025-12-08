@@ -1,7 +1,7 @@
 module pyth::keccak160 {
     use std::vector;
     use pyth::error;
-    use std::aptos_hash;
+    use std::cedra_hash;
 
     struct Hash has drop {
         data: vector<u8>,
@@ -23,7 +23,7 @@ module pyth::keccak160 {
     }
 
     public fun from_data(data: vector<u8>): Hash {
-        let hash = aptos_hash::keccak256(data);
+        let hash = cedra_hash::keccak256(data);
         while (vector::length(&hash) > HASH_LENGTH) {
             vector::pop_back(&mut hash);
         };

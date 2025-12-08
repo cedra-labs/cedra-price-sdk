@@ -3,12 +3,12 @@ module pyth::pyth {
     use pyth::price_identifier::{Self, PriceIdentifier};
     use pyth::price_info::{Self, PriceInfo};
     use pyth::price_feed::{Self};
-    use aptos_framework::coin::{Self, Coin};
-    use aptos_framework::aptos_coin::{AptosCoin};
+    use cedra_framework::coin::{Self, Coin};
+    use cedra_framework::cedra_coin::{CedraCoin};
     use pyth::price::Price;
     use pyth::price;
     use pyth::data_source::{Self, DataSource};
-    use aptos_framework::timestamp;
+    use cedra_framework::timestamp;
     use pyth::deserialize::{Self};
     use wormhole::cursor::{Self, Cursor};
     use std::vector;
@@ -78,8 +78,8 @@ module pyth::pyth {
             signer_capability
         );
         event::init(&pyth);
-        if (!coin::is_account_registered<AptosCoin>(signer::address_of(&pyth))) {
-            coin::register<AptosCoin>(&pyth);
+        if (!coin::is_account_registered<CedraCoin>(signer::address_of(&pyth))) {
+            coin::register<CedraCoin>(&pyth);
         }
     }
 
@@ -138,7 +138,7 @@ module pyth::pyth {
     /// to pass a signer account. update_price_feeds_with_funder() should only be used when
     /// you need to call an entry function.
     ///
-    /// This function will charge an update fee, transferring some AptosCoin's
+    /// This function will charge an update fee, transferring some CedraCoin's
     /// from the given funder account to the Pyth contract. The amount of coins that will be transferred
     /// to perform this update can be queried with get_update_fee(&vaas). The signer must have sufficient
     /// account balance to pay this fee, otherwise the transaction will abort.
@@ -152,14 +152,14 @@ module pyth::pyth {
         };
         // Charge the message update fee
         let update_fee = state::get_base_update_fee() * total_updates;
-        let fee = coin::withdraw<AptosCoin>(account, update_fee);
+        let fee = coin::withdraw<CedraCoin>(account, update_fee);
         coin::deposit(@pyth, fee);
     }
 
     /// Update the cached price feeds with the data in the given VAAs.
     /// The vaas argument is a vector of VAAs encoded as bytes.
     ///
-    /// The javascript https://github.com/pyth-network/pyth-js/tree/main/pyth-aptos-js package
+    /// The javascript https://github.com/pyth-network/pyth-js/tree/main/pyth-cedra-js package
     /// should be used to fetch these VAAs from the Price Service. More information about this
     /// process can be found at https://docs.pyth.network/documentation/pythnet-price-feeds.
     ///
@@ -167,7 +167,7 @@ module pyth::pyth {
     /// The update fee amount can be queried by calling get_update_fee(&vaas).
     ///
     /// Please read more information about the update fee here: https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand#fees
-    public fun update_price_feeds(vaas: vector<vector<u8>>, fee: Coin<AptosCoin>) {
+    public fun update_price_feeds(vaas: vector<vector<u8>>, fee: Coin<CedraCoin>) {
         let total_updates = 0;
         // Update the price feed from each VAA
         while (!vector::is_empty(&vaas)) {
@@ -332,7 +332,7 @@ module pyth::pyth {
         vaas: vector<vector<u8>>,
         price_identifiers: vector<vector<u8>>,
         publish_times: vector<u64>) {
-        let coins = coin::withdraw<AptosCoin>(account, get_update_fee(&vaas));
+        let coins = coin::withdraw<CedraCoin>(account, get_update_fee(&vaas));
         update_price_feeds_if_fresh(vaas, price_identifiers, publish_times, coins);
     }
 
@@ -350,7 +350,7 @@ module pyth::pyth {
         vaas: vector<vector<u8>>,
         price_identifiers: vector<vector<u8>>,
         publish_times: vector<u64>,
-        fee: Coin<AptosCoin>) {
+        fee: Coin<CedraCoin>) {
 
         assert!(vector::length(&price_identifiers) == vector::length(&publish_times),
             error::invalid_publish_times_length());
@@ -417,7 +417,7 @@ module pyth::pyth {
     /// get_price() is likely to abort unless you call update_price_feeds() to update the cached price
     /// beforehand, as the cached prices may be older than the stale price threshold.
     ///
-    /// Note that the price_identifier does not correspond to a seperate Aptos account:
+    /// Note that the price_identifier does not correspond to a seperate Cedra account:
     /// all price feeds are stored in the single pyth account. The price identifier is an
     /// opaque identifier for a price feed.
     public fun get_price(price_identifier: PriceIdentifier): Price {
@@ -426,7 +426,7 @@ module pyth::pyth {
 
     #[view]
     /// A view function version of get_price(...) that's available in offchain programming environments
-    /// including aptos fullnode api, aptos cli, and aptos ts sdk.
+    /// including cedra fullnode api, cedra cli, and cedra ts sdk.
     public fun get_price_by_feed_id(feed_id: vector<u8>): Price {
         let price_identifier = price_identifier::from_byte_vec(feed_id);
         get_price(price_identifier)
@@ -518,7 +518,7 @@ module pyth::pyth {
             price_info::get_price_feed(&state::get_latest_price_info(price_identifier)))
     }
 
-    /// Get the number of AptosCoin's required to perform the given price updates.
+    /// Get the number of CedraCoin's required to perform the given price updates.
     ///
     /// Please read more information about the update fee here: https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand#fees
     public fun get_update_fee(update_data: &vector<vector<u8>>): u64 {
@@ -550,12 +550,12 @@ module pyth::pyth_test {
     use pyth::price_identifier::{Self};
     use pyth::price_info::{Self, PriceInfo};
     use pyth::price_feed::{Self};
-    use aptos_framework::coin::{Self, Coin, BurnCapability, MintCapability};
-    use aptos_framework::aptos_coin::{Self, AptosCoin};
+    use cedra_framework::coin::{Self, Coin, BurnCapability, MintCapability};
+    use cedra_framework::cedra_coin::{Self, CedraCoin};
     use pyth::i64;
     use pyth::price;
     use pyth::data_source::{Self, DataSource};
-    use aptos_framework::timestamp;
+    use cedra_framework::timestamp;
     use std::vector;
     use wormhole::external_address;
     use std::account;
@@ -564,13 +564,13 @@ module pyth::pyth_test {
 
     #[test_only]
     fun setup_test(
-        aptos_framework: &signer,
+        cedra_framework: &signer,
         stale_price_threshold: u64,
         governance_emitter_chain_id: u64,
         governance_emitter_address: vector<u8>,
         data_sources: vector<DataSource>,
         update_fee: u64,
-        to_mint: u64): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>, Coin<AptosCoin>) {
+        to_mint: u64): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
         // Initialize wormhole with a large message collection fee
         wormhole::wormhole_test::setup(100000);
 
@@ -583,13 +583,13 @@ module pyth::pyth_test {
         let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"pyth");
         pyth::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, data_sources, update_fee);
 
-        let (burn_capability, mint_capability) = aptos_coin::initialize_for_test(aptos_framework);
+        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         let coins = coin::mint(to_mint, &mint_capability);
         (burn_capability, mint_capability, coins)
     }
 
     #[test_only]
-    fun cleanup_test(burn_capability: BurnCapability<AptosCoin>, mint_capability: MintCapability<AptosCoin>) {
+    fun cleanup_test(burn_capability: BurnCapability<CedraCoin>, mint_capability: MintCapability<CedraCoin>) {
         coin::destroy_mint_cap(mint_capability);
         coin::destroy_burn_cap(burn_capability);
     }
@@ -669,10 +669,10 @@ module pyth::pyth_test {
         pyth::update_cache(updates);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_get_update_fee(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_get_update_fee(cedra_framework: &signer) {
         let single_update_fee = 50;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 0);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 0);
 
         // Pass in a single VAA
         assert!(pyth::get_update_fee(&vector[
@@ -692,10 +692,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 6, location = wormhole::vaa)]
-    fun test_update_price_feeds_corrupt_vaa(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 100);
+    fun test_update_price_feeds_corrupt_vaa(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 100);
 
         // Pass in a corrupt VAA, which should fail deseriaizing
         let corrupt_vaa = x"90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
@@ -704,9 +704,9 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65539, location = pyth::pyth)]
-    fun test_update_price_feeds_invalid_data_source(aptos_framework: &signer) {
+    fun test_update_price_feeds_invalid_data_source(cedra_framework: &signer) {
         // Initialize the contract with some valid data sources, excluding our test VAA's source
         let data_sources = vector<DataSource>[
             data_source::new(
@@ -714,7 +714,7 @@ module pyth::pyth_test {
                 data_source::new(
                 5, external_address::from_bytes(x"0000000000000000000000000000000000000000000000000000000000007637"))
         ];
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources, 50, 100);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources, 50, 100);
 
         pyth::update_price_feeds(TEST_VAAS, coins);
 
@@ -736,10 +736,10 @@ module pyth::pyth_test {
         ]
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65542, location = pyth::pyth)]
-    fun test_update_price_feeds_insufficient_fee(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1,
+    fun test_update_price_feeds_insufficient_fee(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1,
             x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92",
             data_sources_for_test_vaa(),
             // Update fee
@@ -752,9 +752,9 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_price_feeds_success(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 100);
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_price_feeds_success(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 100);
 
         // Update the price feeds from the VAA
         pyth::update_price_feeds(TEST_VAAS, coins);
@@ -768,12 +768,12 @@ module pyth::pyth_test {
 
     #[test_only]
     fun setup_accumulator_test(
-        aptos_framework: &signer,
+        cedra_framework: &signer,
         data_sources: vector<DataSource>,
         to_mint: u64
-    ): (BurnCapability<AptosCoin>, MintCapability<AptosCoin>, Coin<AptosCoin>) {
-        let aptos_framework_account = std::account::create_account_for_test(@aptos_framework);
-        std::timestamp::set_time_has_started_for_testing(&aptos_framework_account);
+    ): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
+        let cedra_framework_account = std::account::create_account_for_test(@cedra_framework);
+        std::timestamp::set_time_has_started_for_testing(&cedra_framework_account);
         wormhole::init_test(
             22,
             1,
@@ -797,15 +797,15 @@ module pyth::pyth_test {
             data_sources,
             50);
 
-        let (burn_capability, mint_capability) = aptos_coin::initialize_for_test(aptos_framework);
+        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         let coins = coin::mint(to_mint, &mint_capability);
         (burn_capability, mint_capability, coins)
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_update_price(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_update_price(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             50
         );
@@ -873,11 +873,11 @@ module pyth::pyth_test {
         check_price_feeds_cached(&expected);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65542, location = pyth::pyth)]
-    fun test_accumulator_update_price_feeds_insufficient_fee(aptos_framework: &signer) {
+    fun test_accumulator_update_price_feeds_insufficient_fee(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             149
         );
@@ -887,10 +887,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_update_price_multi_feed(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_update_price_multi_feed(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             150
         );
@@ -900,10 +900,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_update_price_out_of_order(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_update_price_out_of_order(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             300
         );
@@ -918,10 +918,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_update_price_multi_msg(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_update_price_multi_msg(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             150
         );
@@ -934,11 +934,11 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65562, location = pyth::pyth)]
-    fun test_accumulator_invalid_payload(aptos_framework: &signer) {
+    fun test_accumulator_invalid_payload(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -946,11 +946,11 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65563, location = pyth::pyth)]
-    fun test_accumulator_invalid_accumulator_message(aptos_framework: &signer) {
+    fun test_accumulator_invalid_accumulator_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -958,11 +958,11 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65564, location = pyth::pyth)]
-    fun test_accumulator_invalid_wormhole_message(aptos_framework: &signer) {
+    fun test_accumulator_invalid_wormhole_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -971,11 +971,11 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65562, location = pyth::pyth)]
-    fun test_accumulator_invalid_major_version(aptos_framework: &signer) {
+    fun test_accumulator_invalid_major_version(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -984,10 +984,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_forward_compatibility(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_forward_compatibility(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -998,10 +998,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65539, location = pyth::pyth)]
-    fun test_accumulator_invalid_data_source(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_accumulator_test(aptos_framework, vector[data_source::new(
+    fun test_accumulator_invalid_data_source(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_accumulator_test(cedra_framework, vector[data_source::new(
             2, // correct emitter chain is 1
             external_address::from_bytes(x"71f8dcb863d176e2c420ad6610cf687359612b6fb392e0642b0ca6b1f186aa3b")
         )], 100);
@@ -1009,10 +1009,10 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_accumulator_update_fee(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_accumulator_update_fee(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             0
         );
@@ -1041,11 +1041,11 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65565, location = pyth::pyth)]
-    fun test_accumulator_invalid_proof(aptos_framework: &signer) {
+    fun test_accumulator_invalid_proof(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
-            aptos_framework,
+            cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
@@ -1054,12 +1054,12 @@ module pyth::pyth_test {
     }
 
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_price_feeds_with_funder(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_price_feeds_with_funder(cedra_framework: &signer) {
         let update_fee = 50;
         let initial_balance = 75;
         let (burn_capability, mint_capability, coins) = setup_test(
-            aptos_framework,
+            cedra_framework,
             500,
             23,
             x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92",
@@ -1071,12 +1071,12 @@ module pyth::pyth_test {
         // Create a test funder account and register it to store funds
         let funder_addr = @0xbfbffd8e2af9a3e3ce20d2d2b22bd640;
         let funder = account::create_account_for_test(funder_addr);
-        coin::register<AptosCoin>(&funder);
+        coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
         assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<AptosCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
 
         // Update the price feeds using the funder
         pyth::update_price_feeds_with_funder(&funder, TEST_VAAS);
@@ -1085,30 +1085,30 @@ module pyth::pyth_test {
         check_price_feeds_cached(&get_mock_price_infos());
 
         // Check that the funder's balance has decreased by the update_fee amount
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
 
         // Check that the amount has been transferred to the Pyth contract
-        assert!(coin::balance<AptosCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    #[expected_failure(abort_code = 65542, location = aptos_framework::coin)]
-    fun test_update_price_feeds_with_funder_insufficient_balance(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    #[expected_failure(abort_code = 65542, location = cedra_framework::coin)]
+    fun test_update_price_feeds_with_funder_insufficient_balance(cedra_framework: &signer) {
         let update_fee = 50;
         let initial_balance = 25;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
 
         // Create a test funder account and register it to store funds
         let funder_addr = @0xbfbffd8e2af9a3e3ce20d2d2b22bd640;
         let funder = account::create_account_for_test(funder_addr);
-        coin::register<AptosCoin>(&funder);
+        coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
         assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<AptosCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
 
         // Update the price feeds using the funder
         pyth::update_price_feeds_with_funder(&funder, TEST_VAAS);
@@ -1141,9 +1141,9 @@ module pyth::pyth_test {
 
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_cache(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_cache(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
         let updates = get_mock_price_infos();
 
@@ -1165,9 +1165,9 @@ module pyth::pyth_test {
         coin::destroy_zero(coins);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_cache_old_update(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 1000, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_cache_old_update(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 1000, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
         // Submit a price update
         let timestamp = 1663680700;
@@ -1228,11 +1228,11 @@ module pyth::pyth_test {
         coin::destroy_zero(coins);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 524292, location = pyth::pyth)]
-    fun test_stale_price_threshold_exceeded(aptos_framework: &signer) {
+    fun test_stale_price_threshold_exceeded(cedra_framework: &signer) {
         let stale_price_threshold = 500;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
         // Submit a price update
         let current_timestamp = timestamp::now_seconds();
@@ -1265,11 +1265,11 @@ module pyth::pyth_test {
         coin::destroy_zero(coins);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 524292, location = pyth::pyth)]
-    fun test_stale_price_threshold_exceeded_ema(aptos_framework: &signer) {
+    fun test_stale_price_threshold_exceeded_ema(cedra_framework: &signer) {
         let stale_price_threshold = 500;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
         // Submit a price update
         let current_timestamp = timestamp::now_seconds();
@@ -1304,10 +1304,10 @@ module pyth::pyth_test {
         coin::destroy_zero(coins);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65541, location = pyth::pyth)]
-    fun test_update_price_feeds_if_fresh_invalid_length(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
+    fun test_update_price_feeds_if_fresh_invalid_length(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
         // Update the price feeds
         let bytes = vector[vector[0u8, 1u8, 2u8]];
@@ -1324,9 +1324,9 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_price_feeds_if_fresh_fresh_data(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 50);
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_price_feeds_if_fresh_fresh_data(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 50);
 
         // Update the price feeds
         let bytes = TEST_VAAS;
@@ -1348,21 +1348,21 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_update_price_feeds_if_fresh_with_funder_fresh_data(aptos_framework: &signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_update_price_feeds_if_fresh_with_funder_fresh_data(cedra_framework: &signer) {
         let update_fee = 50;
         let initial_balance = 75;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
 
         // Create a test funder account and register it to store funds
         let funder_addr = @0xbfbffd8e2af9a3e3ce20d2d2b22bd640;
         let funder = account::create_account_for_test(funder_addr);
-        coin::register<AptosCoin>(&funder);
+        coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
         assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<AptosCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
 
         // Update the price feeds using the funder
         let bytes = TEST_VAAS;
@@ -1381,18 +1381,18 @@ module pyth::pyth_test {
         check_price_feeds_cached(&get_mock_price_infos());
 
         // Check that the funder's balance has decreased by the update_fee amount
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
 
         // Check that the amount has been transferred to the Pyth contract
-        assert!(coin::balance<AptosCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 524295, location = pyth::pyth)]
-    fun test_update_price_feeds_if_fresh_stale_data(aptos_framework: &signer) {
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 50);
+    fun test_update_price_feeds_if_fresh_stale_data(cedra_framework: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 50);
 
         // First populate the cache
         pyth::update_cache(get_mock_price_infos());
@@ -1414,22 +1414,22 @@ module pyth::pyth_test {
         cleanup_test(burn_capability, mint_capability);
     }
 
-    #[test(aptos_framework = @aptos_framework)]
+    #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 524295, location = pyth::pyth)]
-    fun test_update_price_feeds_if_fresh_with_funder_stale_data(aptos_framework: &signer) {
+    fun test_update_price_feeds_if_fresh_with_funder_stale_data(cedra_framework: &signer) {
         let update_fee = 50;
         let initial_balance = 75;
-        let (burn_capability, mint_capability, coins) = setup_test(aptos_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
+        let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), update_fee, initial_balance);
 
         // Create a test funder account and register it to store funds
         let funder_addr = @0xbfbffd8e2af9a3e3ce20d2d2b22bd640;
         let funder = account::create_account_for_test(funder_addr);
-        coin::register<AptosCoin>(&funder);
+        coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
         assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
-        assert!(coin::balance<AptosCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<AptosCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
+        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
 
         // First populate the cache
         pyth::update_cache(get_mock_price_infos());

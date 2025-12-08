@@ -4,8 +4,8 @@ module pyth::contract_upgrade {
     use pyth::contract_upgrade_hash::{Self, Hash};
     use pyth::state::{Self};
     use std::vector;
-    use std::aptos_hash;
-    use aptos_framework::code;
+    use std::cedra_hash;
+    use cedra_framework::code;
     use pyth::error;
 
     friend pyth::governance;
@@ -36,7 +36,7 @@ module pyth::contract_upgrade {
         code: vector<vector<u8>>,
     ) {
         // Check to see if the hash of the given code and metadata matches the authorized hash.
-        // The aptos framework does no validation of the metadata, so we include it in the hash.
+        // The cedra framework does no validation of the metadata, so we include it in the hash.
         assert!(matches_hash(code, metadata_serialized, state::get_contract_upgrade_authorized_hash()), error::invalid_upgrade_hash());
         // Perform the upgrade
         let pyth = state::pyth_signer();
@@ -49,10 +49,10 @@ module pyth::contract_upgrade {
         // code is a vector of vectors of bytes (one for each component), so we need to flatten it before hashing.
         let reversed = copy code;
         vector::reverse(&mut reversed);
-        let flattened = aptos_hash::keccak256(metadata_serialized);
-        while (!vector::is_empty(&reversed)) vector::append(&mut flattened, aptos_hash::keccak256(vector::pop_back(&mut reversed)));
+        let flattened = cedra_hash::keccak256(metadata_serialized);
+        while (!vector::is_empty(&reversed)) vector::append(&mut flattened, cedra_hash::keccak256(vector::pop_back(&mut reversed)));
 
-        aptos_hash::keccak256(flattened) == contract_upgrade_hash::destroy(hash)
+        cedra_hash::keccak256(flattened) == contract_upgrade_hash::destroy(hash)
     }
 }
 

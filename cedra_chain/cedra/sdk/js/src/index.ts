@@ -1,4 +1,4 @@
-export { AptosPriceServiceConnection } from "./AptosPriceServiceConnection";
+export { CedraPriceServiceConnection } from "./CedraPriceServiceConnection";
 
 export {
   type DurationInMs,

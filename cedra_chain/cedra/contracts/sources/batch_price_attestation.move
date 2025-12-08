@@ -5,7 +5,7 @@ module pyth::batch_price_attestation {
     use pyth::price_identifier::{Self};
     use pyth::price_status;
     use pyth::deserialize::{Self};
-    use aptos_framework::timestamp;
+    use cedra_framework::timestamp;
     use wormhole::cursor::{Self, Cursor};
     use std::vector::{Self};
 
@@ -14,7 +14,7 @@ module pyth::batch_price_attestation {
     #[test_only]
     use pyth::i64;
     #[test_only]
-    use aptos_framework::account;
+    use cedra_framework::account;
 
     const MAGIC: u64 = 0x50325748; // "P2WH" (Pyth2Wormhole) raw ASCII bytes
 
@@ -167,12 +167,12 @@ module pyth::batch_price_attestation {
         destroy(deserialize(bytes));
     }
 
-    #[test(aptos_framework = @aptos_framework)]
-    fun test_deserialize_batch_price_attestation(aptos_framework: signer) {
+    #[test(cedra_framework = @cedra_framework)]
+    fun test_deserialize_batch_price_attestation(cedra_framework: signer) {
 
         // Set the arrival time
-        account::create_account_for_test(@aptos_framework);
-        timestamp::set_time_has_started_for_testing(&aptos_framework);
+        account::create_account_for_test(@cedra_framework);
+        timestamp::set_time_has_started_for_testing(&cedra_framework);
         let arrival_time = 1663074349;
         timestamp::update_global_time_for_test(1663074349 * 1000000);
 
