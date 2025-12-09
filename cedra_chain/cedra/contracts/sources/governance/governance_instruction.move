@@ -1,9 +1,9 @@
 module pyth::governance_instruction {
-    use wormhole::cursor;
+    use pyth::cursor;
     use pyth::deserialize;
     use pyth::error;
     use pyth::governance_action::{Self, GovernanceAction};
-    use wormhole::u16;
+    use pyth::u16;
 
     const MAGIC: vector<u8> = x"5054474d"; // "PTGM": Pyth Governance Message
     const MODULE: u8 = 1;

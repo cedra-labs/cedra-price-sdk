@@ -6,7 +6,7 @@ module pyth::batch_price_attestation {
     use pyth::price_status;
     use pyth::deserialize::{Self};
     use cedra_framework::timestamp;
-    use wormhole::cursor::{Self, Cursor};
+    use pyth::cursor::{Self, Cursor};
     use std::vector::{Self};
 
     #[test_only]

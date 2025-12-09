@@ -1,7 +1,7 @@
 module pyth::governance {
     use wormhole::vaa::{Self, VAA};
     use pyth::data_source::{Self};
-    use wormhole::u16;
+    use pyth::u16;
     use pyth::governance_instruction;
     use pyth::governance_action;
     use pyth::contract_upgrade;

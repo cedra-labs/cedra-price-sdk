@@ -1,5 +1,5 @@
 module pyth::set_data_sources {
-    use wormhole::cursor;
+    use pyth::cursor;
     use pyth::deserialize;
     use wormhole::external_address::{Self};
     use pyth::data_source::{Self, DataSource};

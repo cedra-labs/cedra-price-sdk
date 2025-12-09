@@ -10,11 +10,11 @@ module pyth::pyth {
     use pyth::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
     use pyth::deserialize::{Self};
-    use wormhole::cursor::{Self, Cursor};
+    use pyth::cursor::{Self, Cursor};
     use std::vector;
     use pyth::state;
     use wormhole::vaa;
-    use wormhole::u16;
+    use pyth::u16;
     use wormhole::external_address;
     use std::account;
     use std::signer;

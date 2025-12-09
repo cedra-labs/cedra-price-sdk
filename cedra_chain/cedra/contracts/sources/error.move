@@ -111,7 +111,7 @@ module pyth::error {
         error::invalid_argument(27)
     }
 
-    public fun invalid_wormhole_message(): u64 {
+    public fun invalid_cedra_oracle_message(): u64 {
         error::invalid_argument(28)
     }
 

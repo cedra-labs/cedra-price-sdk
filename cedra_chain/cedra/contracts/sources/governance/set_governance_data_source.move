@@ -1,5 +1,5 @@
 module pyth::set_governance_data_source {
-    use wormhole::cursor;
+    use pyth::cursor;
     use pyth::deserialize;
     use wormhole::external_address::{Self, ExternalAddress};
     use pyth::data_source;

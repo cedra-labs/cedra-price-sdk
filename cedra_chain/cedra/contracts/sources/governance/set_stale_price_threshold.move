@@ -1,5 +1,5 @@
 module pyth::set_stale_price_threshold {
-    use wormhole::cursor;
+    use pyth::cursor;
     use pyth::deserialize;
     use pyth::state;
 

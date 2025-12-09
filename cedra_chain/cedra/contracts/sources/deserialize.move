@@ -1,27 +1,47 @@
 module pyth::deserialize {
-    use wormhole::deserialize;
-    use wormhole::u16;
-    use wormhole::u32;
-    use wormhole::cursor::{Cursor};
+    use pyth::cursor::{Self, Cursor};
+    use pyth::u16;
+    use pyth::u32;
+    use pyth::cursor::{Cursor};
     use pyth::i64::{Self, I64};
+    use std::vector;
 
     #[test_only]
-    use wormhole::cursor::{Self};
+    use pyth::cursor::{Self};
 
     public fun deserialize_vector(cur: &mut Cursor<u8>, n: u64): vector<u8> {
-        deserialize::deserialize_vector(cur, n)
+        let result = vector::empty();
+        while (n > 0) {
+            vector::push_back(&mut result, cursor::poke(cur));
+            n = n - 1;
+        };
+        result
     }
 
     public fun deserialize_u8(cur: &mut Cursor<u8>): u8 {
-        deserialize::deserialize_u8(cur)
+        cursor::poke(cur)
     }
 
     public fun deserialize_u16(cur: &mut Cursor<u8>): u64 {
-        u16::to_u64(deserialize::deserialize_u16(cur))
+        let res: u64 = 0;
+        let i = 0;
+        while (i < 2) {
+            let b = cursor::poke(cur);
+            res = (res << 8) + (b as u64);
+            i = i + 1;
+        };
+        u16::from_u64(res)
     }
 
     public fun deserialize_u32(cur: &mut Cursor<u8>): u64 {
-        u32::to_u64(deserialize::deserialize_u32(cur))
+        let res: u64 = 0;
+        let i = 0;
+        while (i < 4) {
+            let b = cursor::poke(cur);
+            res = (res << 8) + (b as u64);
+            i = i + 1;
+        };
+        u32::from_u64(res)
     }
 
     public fun deserialize_i32(cur: &mut Cursor<u8>): I64 {
@@ -38,7 +58,14 @@ module pyth::deserialize {
     }
 
     public fun deserialize_u64(cur: &mut Cursor<u8>): u64 {
-        deserialize::deserialize_u64(cur)
+        let res: u64 = 0;
+        let i = 0;
+        while (i < 8) {
+            let b = cursor::poke(cur);
+            res = (res << 8) + (b as u64);
+            i = i + 1;
+        };
+        res
     }
 
     public fun deserialize_i64(cur: &mut Cursor<u8>): I64 {
