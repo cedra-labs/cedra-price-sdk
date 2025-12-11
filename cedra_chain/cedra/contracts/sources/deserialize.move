@@ -2,7 +2,6 @@ module pyth::deserialize {
     use pyth::cursor::{Self, Cursor};
     use pyth::u16;
     use pyth::u32;
-    use pyth::cursor::{Cursor};
     use pyth::i64::{Self, I64};
     use std::vector;
 
@@ -30,7 +29,7 @@ module pyth::deserialize {
             res = (res << 8) + (b as u64);
             i = i + 1;
         };
-        u16::from_u64(res)
+        res
     }
 
     public fun deserialize_u32(cur: &mut Cursor<u8>): u64 {
@@ -41,7 +40,7 @@ module pyth::deserialize {
             res = (res << 8) + (b as u64);
             i = i + 1;
         };
-        u32::from_u64(res)
+        res
     }
 
     public fun deserialize_i32(cur: &mut Cursor<u8>): I64 {

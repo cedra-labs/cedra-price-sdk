@@ -13,9 +13,9 @@ module pyth::pyth {
     use pyth::cursor::{Self, Cursor};
     use std::vector;
     use pyth::state;
-    use wormhole::vaa;
+    use pyth::vaa;
     use pyth::u16;
-    use wormhole::external_address;
+    use pyth::external_address;
     use std::account;
     use std::signer;
     use deployer::deployer;
@@ -193,9 +193,9 @@ module pyth::pyth {
     fun parse_accumulator_merkle_root_from_vaa_payload(message: vector<u8>): keccak160::Hash {
         let msg_payload_cursor = cursor::init(message);
         let payload_type = deserialize::deserialize_u32(&mut msg_payload_cursor);
-        assert!(payload_type == ACCUMULATOR_UPDATE_WORMHOLE_VERIFICATION_MAGIC, error::invalid_wormhole_message());
+        assert!(payload_type == ACCUMULATOR_UPDATE_WORMHOLE_VERIFICATION_MAGIC, error::invalid_cedra_oracle_message());
         let wh_message_payload_type = deserialize::deserialize_u8(&mut msg_payload_cursor);
-        assert!(wh_message_payload_type == 0, error::invalid_wormhole_message()); // Merkle variant
+        assert!(wh_message_payload_type == 0, error::invalid_cedra_oracle_message()); // Merkle variant
         let _merkle_root_slot = deserialize::deserialize_u64(&mut msg_payload_cursor);
         let _merkle_root_ring_size = deserialize::deserialize_u32(&mut msg_payload_cursor);
         let merkle_root_hash = deserialize::deserialize_vector(&mut msg_payload_cursor, 20);
@@ -557,7 +557,7 @@ module pyth::pyth_test {
     use pyth::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
     use std::vector;
-    use wormhole::external_address;
+    use pyth::external_address;
     use std::account;
     use std::signer;
     use wormhole::wormhole;
@@ -960,7 +960,7 @@ module pyth::pyth_test {
 
     #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65564, location = pyth::pyth)]
-    fun test_accumulator_invalid_wormhole_message(cedra_framework: &signer) {
+    fun test_accumulator_invalid_cedra_oracle_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
             data_sources_for_test_vaa(),

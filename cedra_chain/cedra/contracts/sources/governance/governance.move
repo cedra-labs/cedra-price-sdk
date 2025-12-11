@@ -63,7 +63,7 @@ module pyth::governance_test {
     use pyth::governance;
     use pyth::contract_upgrade_hash;
     use pyth::state;
-    use wormhole::external_address;
+    use pyth::external_address;
     use std::account;
     use std::vector;
 
@@ -85,7 +85,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 6, location = wormhole::vaa)]
+    #[expected_failure(abort_code = 6, location = pyth::vaa)]
     fun test_execute_governance_instruction_invalid_vaa() {
         setup_test(50, 24, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
         let vaa_bytes = x"6c436741b108";
