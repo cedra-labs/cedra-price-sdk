@@ -1,5 +1,5 @@
-module pyth::price_status {
-    use pyth::error;
+module oracle::price_status {
+    use oracle::error;
 
     /// The price feed is not currently updating for an unknown reason.
     const UNKNOWN: u64 = 0;
@@ -46,7 +46,7 @@ module pyth::price_status {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65559, location = pyth::price_status)]
+    #[expected_failure(abort_code = 65559, location = oracle::price_status)]
     fun test_invalid_price_status() {
         from_u64(3);
     }

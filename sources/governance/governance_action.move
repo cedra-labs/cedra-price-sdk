@@ -1,5 +1,5 @@
-module pyth::governance_action {
-    use pyth::error;
+module oracle::governance_action {
+    use oracle::error;
 
     const CONTRACT_UPGRADE: u8 = 0;
     const SET_GOVERNANCE_DATA_SOURCE: u8 = 1;

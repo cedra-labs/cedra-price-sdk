@@ -1,16 +1,16 @@
-module pyth::governance {
+module oracle::governance {
     use cedra_message::vaa::{Self, VAA};
-    use pyth::data_source::{Self};
+    use oracle::data_source::{Self};
     use cedra_message::u16;
-    use pyth::governance_instruction;
-    use pyth::governance_action;
-    use pyth::contract_upgrade;
-    use pyth::set_governance_data_source;
-    use pyth::set_data_sources;
-    use pyth::set_stale_price_threshold;
-    use pyth::error;
-    use pyth::set_update_fee;
-    use pyth::state;
+    use oracle::governance_instruction;
+    use oracle::governance_action;
+    use oracle::contract_upgrade;
+    use oracle::set_governance_data_source;
+    use oracle::set_data_sources;
+    use oracle::set_stale_price_threshold;
+    use oracle::error;
+    use oracle::set_update_fee;
+    use oracle::state;
 
     public entry fun execute_governance_instruction(vaa_bytes: vector<u8>) {
         let parsed_vaa = parse_and_verify_governance_vaa(vaa_bytes);
@@ -57,12 +57,12 @@ module pyth::governance {
 }
 
 #[test_only]
-module pyth::governance_test {
-    use pyth::data_source::{Self, DataSource};
-    use pyth::pyth;
-    use pyth::governance;
-    use pyth::contract_upgrade_hash;
-    use pyth::state;
+module oracle::governance_test {
+    use oracle::data_source::{Self, DataSource};
+    use oracle::oracle;
+    use oracle::governance;
+    use oracle::contract_upgrade_hash;
+    use oracle::state;
     use cedra_message::external_address;
     use std::account;
     use std::vector;
@@ -80,8 +80,8 @@ module pyth::governance_test {
         // Deploy and initialize a test instance of the Pyth contract
         let deployer = account::create_signer_with_capability(&
             account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b));
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"pyth");
-        pyth::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, vector[], update_fee);
+        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        oracle::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, vector[], update_fee);
     }
 
     #[test]
@@ -93,7 +93,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65550, location = pyth::governance)]
+    #[expected_failure(abort_code = 65550, location = oracle::governance)]
     fun test_execute_governance_instruction_invalid_data_source() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -105,7 +105,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65551, location = pyth::governance)]
+    #[expected_failure(abort_code = 65551, location = oracle::governance)]
     fun test_execute_governance_instruction_invalid_sequence_number_0() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
         assert!(state::get_last_executed_governance_sequence() == 0, 1);
@@ -119,7 +119,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65556, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65556, location = oracle::governance_instruction)]
     fun test_execute_governance_instruction_invalid_instruction_magic() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -133,7 +133,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65548, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65548, location = oracle::governance_instruction)]
     fun test_execute_governance_instruction_invalid_module() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -148,7 +148,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65549, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65549, location = oracle::governance_instruction)]
     fun test_execute_governance_instruction_invalid_target_chain() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -164,7 +164,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65552, location = pyth::governance_action)]
+    #[expected_failure(abort_code = 65552, location = oracle::governance_action)]
     fun test_execute_governance_instruction_invalid_action() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -204,7 +204,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65558, location = pyth::governance)]
+    #[expected_failure(abort_code = 65558, location = oracle::governance)]
     fun test_execute_governance_instruction_upgrade_contract_chain_id_zero() {
         setup_test(100, 50, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
 
@@ -280,7 +280,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65550, location = pyth::governance)]
+    #[expected_failure(abort_code = 65550, location = oracle::governance)]
     fun test_execute_governance_instruction_set_governance_data_source_old_source_invalid() {
         let initial_governance_emitter_chain_id = 50;
         let initial_governance_emitter_address = x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf";

@@ -1,5 +1,5 @@
-module pyth::price_info {
-    use pyth::price_feed::PriceFeed;
+module oracle::price_info {
+    use oracle::price_feed::PriceFeed;
 
     struct PriceInfo has copy, drop, store {
         attestation_time: u64,

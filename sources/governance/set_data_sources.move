@@ -1,12 +1,12 @@
-module pyth::set_data_sources {
+module oracle::set_data_sources {
     use cedra_message::cursor;
-    use pyth::deserialize;
+    use oracle::deserialize;
     use cedra_message::external_address::{Self};
-    use pyth::data_source::{Self, DataSource};
-    use pyth::state;
+    use oracle::data_source::{Self, DataSource};
+    use oracle::state;
     use std::vector;
 
-    friend pyth::governance;
+    friend oracle::governance;
 
     struct SetDataSources {
         sources: vector<DataSource>,

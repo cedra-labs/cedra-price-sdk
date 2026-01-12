@@ -1,11 +1,11 @@
-module pyth::set_governance_data_source {
+module oracle::set_governance_data_source {
     use cedra_message::cursor;
-    use pyth::deserialize;
+    use oracle::deserialize;
     use cedra_message::external_address::{Self, ExternalAddress};
-    use pyth::data_source;
-    use pyth::state;
+    use oracle::data_source;
+    use oracle::state;
 
-    friend pyth::governance;
+    friend oracle::governance;
 
     struct SetGovernanceDataSource {
         emitter_chain_id: u64,

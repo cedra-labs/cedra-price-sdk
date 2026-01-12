@@ -1,9 +1,9 @@
-module pyth::event {
+module oracle::event {
     use std::event::{Self, EventHandle};
-    use pyth::price_feed::{PriceFeed};
+    use oracle::price_feed::{PriceFeed};
     use std::account;
 
-    friend pyth::pyth;
+    friend oracle::oracle;
 
     /// Signifies that a price feed has been updated
     struct PriceFeedUpdate has store, drop {
@@ -17,17 +17,17 @@ module pyth::event {
         event: EventHandle<PriceFeedUpdate>
     }
 
-    public(friend) fun init(pyth: &signer) {
+    public(friend) fun init(oracle: &signer) {
         move_to(
-            pyth,
+            oracle,
             PriceFeedUpdateHandle {
-                event: account::new_event_handle<PriceFeedUpdate>(pyth)
+                event: account::new_event_handle<PriceFeedUpdate>(oracle)
             }
         );
     }
 
     public(friend) fun emit_price_feed_update(price_feed: PriceFeed, timestamp: u64) acquires PriceFeedUpdateHandle {
-        let event_handle = borrow_global_mut<PriceFeedUpdateHandle>(@pyth);
+        let event_handle = borrow_global_mut<PriceFeedUpdateHandle>(@oracle);
         event::emit_event<PriceFeedUpdate>(
             &mut event_handle.event,
             PriceFeedUpdate {

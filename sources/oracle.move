@@ -1,31 +1,31 @@
-module pyth::pyth {
-    use pyth::batch_price_attestation::{Self};
-    use pyth::price_identifier::{Self, PriceIdentifier};
-    use pyth::price_info::{Self, PriceInfo};
-    use pyth::price_feed::{Self};
+module oracle::oracle {
+    use oracle::batch_price_attestation::{Self};
+    use oracle::price_identifier::{Self, PriceIdentifier};
+    use oracle::price_info::{Self, PriceInfo};
+    use oracle::price_feed::{Self};
     use cedra_framework::coin::{Self, Coin};
     use cedra_framework::cedra_coin::{CedraCoin};
-    use pyth::price::Price;
-    use pyth::price;
-    use pyth::data_source::{Self, DataSource};
+    use oracle::price::Price;
+    use oracle::price;
+    use oracle::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
-    use pyth::deserialize::{Self};
+    use oracle::deserialize::{Self};
     use cedra_message::cursor::{Self, Cursor};
     use std::vector;
-    use pyth::state;
+    use oracle::state;
     use cedra_message::vaa;
     use cedra_message::u16;
     use cedra_message::external_address;
     use std::account;
     use std::signer;
     use deployer::deployer;
-    use pyth::error;
-    use pyth::event;
-    use pyth::merkle;
-    use pyth::keccak160;
+    use oracle::error;
+    use oracle::event;
+    use oracle::merkle;
+    use oracle::keccak160;
 
     #[test_only]
-    friend pyth::pyth_test;
+    friend oracle::pyth_test;
 
     const PYTHNET_ACCUMULATOR_UPDATE_MAGIC: u64 = 1347305813;
     const ACCUMULATOR_UPDATE_WORMHOLE_VERIFICATION_MAGIC: u64 = 1096111958;
@@ -45,7 +45,7 @@ module pyth::pyth {
     ) {
         // Claim the signer capability from the deployer. Note that this is a one-time operation,
         // so that this function can only be called once.
-        let signer_capability = deployer::claim_signer_capability(deployer, @pyth);
+        let signer_capability = deployer::claim_signer_capability(deployer, @oracle);
         init_internal(
             signer_capability,
             stale_price_threshold,
@@ -66,9 +66,9 @@ module pyth::pyth {
         governance_emitter_address: vector<u8>,
         data_sources: vector<DataSource>,
         update_fee: u64) {
-        let pyth = account::create_signer_with_capability(&signer_capability);
+        let oracle = account::create_signer_with_capability(&signer_capability);
         state::init(
-            &pyth,
+            &oracle,
             stale_price_threshold,
             update_fee,
             data_source::new(
@@ -77,9 +77,9 @@ module pyth::pyth {
             data_sources,
             signer_capability
         );
-        event::init(&pyth);
-        if (!coin::is_account_registered<CedraCoin>(signer::address_of(&pyth))) {
-            coin::register<CedraCoin>(&pyth);
+        event::init(&oracle);
+        if (!coin::is_account_registered<CedraCoin>(signer::address_of(&oracle))) {
+            coin::register<CedraCoin>(&oracle);
         }
     }
 
@@ -138,10 +138,10 @@ module pyth::pyth {
 
         let update_fee = state::get_base_update_fee();
         let fee = coin::withdraw<CedraCoin>(account, update_fee);
-        coin::deposit(@pyth, fee);
+        coin::deposit(@oracle, fee);
     }
 // Pyth uses an uses an on-demand update model, where consumers need to update the
-/// cached prices before using them. Please read more about this at https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand.
+/// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
 
     /// Update the cached price feeds with the data in the given VAAs. This is a
     /// convenience wrapper around update_price_feeds(), which allows you to update the price feeds
@@ -156,7 +156,7 @@ module pyth::pyth {
     /// to perform this update can be queried with get_update_fee(&vaas). The signer must have sufficient
     /// account balance to pay this fee, otherwise the transaction will abort.
     ///
-    /// Please read more information about the update fee here: https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
     public entry fun update_price_feeds_with_funder(account: &signer, vaas: vector<vector<u8>>) {
         let total_updates = 0;
         // Update the price feed from each VAA
@@ -166,20 +166,20 @@ module pyth::pyth {
         // Charge the message update fee
         let update_fee = state::get_base_update_fee() * total_updates;
         let fee = coin::withdraw<CedraCoin>(account, update_fee);
-        coin::deposit(@pyth, fee);
+        coin::deposit(@oracle, fee);
     }
 
     /// Update the cached price feeds with the data in the given VAAs.
     /// The vaas argument is a vector of VAAs encoded as bytes.
     ///
-    /// The javascript https://github.com/pyth-network/pyth-js/tree/main/pyth-cedra-js package
+    /// The javascript https://github.com/oracle-network/oracle-js/tree/main/oracle-cedra-js package
     /// should be used to fetch these VAAs from the Price Service. More information about this
-    /// process can be found at https://docs.pyth.network/documentation/pythnet-price-feeds.
+    /// process can be found at https://docs.oracle.network/documentation/pythnet-price-feeds.
     ///
     /// The given fee must contain a sufficient number of coins to pay the update fee for the given vaas.
     /// The update fee amount can be queried by calling get_update_fee(&vaas).
     ///
-    /// Please read more information about the update fee here: https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
     public fun update_price_feeds(vaas: vector<vector<u8>>, fee: Coin<CedraCoin>) {
         let total_updates = 0;
         // Update the price feed from each VAA
@@ -189,7 +189,7 @@ module pyth::pyth {
         // Charge the message update fee
         let update_fee = state::get_base_update_fee() * total_updates;
         assert!(update_fee <= coin::value(&fee), error::insufficient_fee());
-        coin::deposit(@pyth, fee);
+        coin::deposit(@oracle, fee);
     }
 
     fun verify_data_source(vaa: &vaa::VAA) {
@@ -236,8 +236,8 @@ module pyth::pyth {
             timestamp::now_seconds(),
             price_feed::new(
                 price_identifier,
-                pyth::price::new(price, conf, expo, publish_time),
-                pyth::price::new(ema_price, ema_conf, expo, publish_time),
+                oracle::price::new(price, conf, expo, publish_time),
+                oracle::price::new(ema_price, ema_conf, expo, publish_time),
             )
         );
         cursor::rest(message_cur);
@@ -422,16 +422,16 @@ module pyth::pyth {
     /// Get the latest available price cached for the given price identifier, if that price is
     /// no older than the stale price threshold.
     ///
-    /// Please refer to the documentation at https://docs.pyth.network/documentation/pythnet-price-feeds/best-practices for
+    /// Please refer to the documentation at https://docs.oracle.network/documentation/pythnet-price-feeds/best-practices for
     /// how to how this price safely.
     ///
     /// Important: Pyth uses an on-demand update model, where consumers need to update the
-    /// cached prices before using them. Please read more about this at https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand.
+    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
     /// get_price() is likely to abort unless you call update_price_feeds() to update the cached price
     /// beforehand, as the cached prices may be older than the stale price threshold.
     ///
     /// Note that the price_identifier does not correspond to a seperate Cedra account:
-    /// all price feeds are stored in the single pyth account. The price identifier is an
+    /// all price feeds are stored in the single oracle account. The price identifier is an
     /// opaque identifier for a price feed.
     public fun get_price(price_identifier: PriceIdentifier): Price {
         get_price_no_older_than(price_identifier, state::get_stale_price_threshold_secs())
@@ -502,7 +502,7 @@ module pyth::pyth {
     /// price identifier, if that price is no older than the stale price threshold.
     ///
     /// Important: Pyth uses an on-demand update model, where consumers need to update the
-    /// cached prices before using them. Please read more about this at https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand.
+    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
     /// get_ema_price() is likely to abort unless you call update_price_feeds() to update the cached price
     /// beforehand, as the cached prices may be older than the stale price threshold.
     public fun get_ema_price(price_identifier: PriceIdentifier): Price {
@@ -533,7 +533,7 @@ module pyth::pyth {
 
     /// Get the number of CedraCoin's required to perform the given price updates.
     ///
-    /// Please read more information about the update fee here: https://docs.pyth.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
     public fun get_update_fee(update_data: &vector<vector<u8>>): u64 {
         let i = 0;
         let total_updates = 0;
@@ -558,16 +558,16 @@ module pyth::pyth {
 // -----------------------------------------------------------------------------
 // Tests
 #[test_only]
-module pyth::pyth_test {
-    use pyth::pyth;
-    use pyth::price_identifier::{Self};
-    use pyth::price_info::{Self, PriceInfo};
-    use pyth::price_feed::{Self};
+module oracle::pyth_test {
+    use oracle::oracle;
+    use oracle::price_identifier::{Self};
+    use oracle::price_info::{Self, PriceInfo};
+    use oracle::price_feed::{Self};
     use cedra_framework::coin::{Self, Coin, BurnCapability, MintCapability};
     use cedra_framework::cedra_coin::{Self, CedraCoin};
-    use pyth::i64;
-    use pyth::price;
-    use pyth::data_source::{Self, DataSource};
+    use oracle::i64;
+    use oracle::price;
+    use oracle::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
     use std::vector;
     use cedra_message::external_address;
@@ -593,8 +593,8 @@ module pyth::pyth_test {
         // Deploy and initialize a test instance of the Pyth contract
         let deployer = account::create_signer_with_capability(&
             account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b));
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"pyth");
-        pyth::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, data_sources, update_fee);
+        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        oracle::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, data_sources, update_fee);
 
         let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         let coins = coin::mint(to_mint, &mint_capability);
@@ -679,7 +679,7 @@ module pyth::pyth_test {
     #[test_only]
     /// Allow anyone to update the cache with given updates. For testing purpose only.
     public fun update_cache_for_test(updates: vector<PriceInfo>) {
-        pyth::update_cache(updates);
+        oracle::update_cache(updates);
     }
 
     #[test(cedra_framework = @cedra_framework)]
@@ -688,12 +688,12 @@ module pyth::pyth_test {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 0);
 
         // Pass in a single VAA
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             x"fb1543888001083cf2e6ef3afdcf827e89b11efd87c563638df6e1995ada9f93",
         ]) == single_update_fee, 1);
 
         // Pass in multiple VAAs
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             x"4ee17a1a4524118de513fddcf82b77454e51be5d6fc9e29fc72dd6c204c0e4fa",
             x"c72fdf81cfc939d4286c93fbaaae2eec7bae28a5926fa68646b43a279846ccc1",
             x"d9a8123a793529c31200339820a3210059ecace6c044f81ecad62936e47ca049",
@@ -712,13 +712,13 @@ module pyth::pyth_test {
 
         // Pass in a corrupt VAA, which should fail deseriaizing
         let corrupt_vaa = x"90F8bf6A479f320ead074411a4B0e7944Ea8c9C1";
-        pyth::update_price_feeds(vector[corrupt_vaa], coins);
+        oracle::update_price_feeds(vector[corrupt_vaa], coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65539, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65539, location = oracle::oracle)]
     fun test_update_price_feeds_invalid_data_source(cedra_framework: &signer) {
         // Initialize the contract with some valid data sources, excluding our test VAA's source
         let data_sources = vector<DataSource>[
@@ -729,7 +729,7 @@ module pyth::pyth_test {
         ];
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources, 50, 100);
 
-        pyth::update_price_feeds(TEST_VAAS, coins);
+        oracle::update_price_feeds(TEST_VAAS, coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -750,7 +750,7 @@ module pyth::pyth_test {
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65542, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65542, location = oracle::oracle)]
     fun test_update_price_feeds_insufficient_fee(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1,
             x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92",
@@ -760,7 +760,7 @@ module pyth::pyth_test {
             // Coins provided to update < update fee
             20);
 
-        pyth::update_price_feeds(TEST_VAAS, coins);
+        oracle::update_price_feeds(TEST_VAAS, coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -770,7 +770,7 @@ module pyth::pyth_test {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 100);
 
         // Update the price feeds from the VAA
-        pyth::update_price_feeds(TEST_VAAS, coins);
+        oracle::update_price_feeds(TEST_VAAS, coins);
 
         // Check that the cache has been updated
         let expected = get_mock_price_infos();
@@ -802,8 +802,8 @@ module pyth::pyth_test {
         let deployer = account::create_signer_with_capability(
             &account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b)
         );
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"pyth");
-        pyth::init_test(signer_capability,
+        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        oracle::init_test(signer_capability,
             500,
             1,
             x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92",
@@ -823,7 +823,7 @@ module pyth::pyth_test {
             50
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR], coins);
 
         let expected = vector<PriceInfo>[
             price_info::new(
@@ -887,7 +887,7 @@ module pyth::pyth_test {
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65542, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65542, location = oracle::oracle)]
     fun test_accumulator_update_price_feeds_insufficient_fee(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
@@ -895,7 +895,7 @@ module pyth::pyth_test {
             149
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -908,7 +908,7 @@ module pyth::pyth_test {
             150
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
         check_accumulator_test_price_feeds(0);
         cleanup_test(burn_capability, mint_capability);
     }
@@ -921,12 +921,12 @@ module pyth::pyth_test {
             300
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS_LATER, TEST_ACCUMULATOR_3_MSGS], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS_LATER, TEST_ACCUMULATOR_3_MSGS], coins);
         check_accumulator_test_price_feeds(10);
 
         // we pass the old message again in a separate call to make sure it will not overwrite the recent values in neither case
         let coins_second_call = coin::mint(150, &mint_capability);
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins_second_call);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins_second_call);
         check_accumulator_test_price_feeds(10);
         cleanup_test(burn_capability, mint_capability);
     }
@@ -939,40 +939,40 @@ module pyth::pyth_test {
             150
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS], coins);
         check_accumulator_test_price_feeds(0);
         let coins_second_call = coin::mint(150, &mint_capability);
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS_LATER], coins_second_call);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_3_MSGS_LATER], coins_second_call);
         check_accumulator_test_price_feeds(10);
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65562, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65562, location = oracle::oracle)]
     fun test_accumulator_invalid_payload(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
-        pyth::update_price_feeds(vector[x"504e415500000000"], coins);
+        oracle::update_price_feeds(vector[x"504e415500000000"], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65563, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65563, location = oracle::oracle)]
     fun test_accumulator_invalid_accumulator_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_ACC_MSG], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_ACC_MSG], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65564, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65564, location = oracle::oracle)]
     fun test_accumulator_invalid_wormhole_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
@@ -980,12 +980,12 @@ module pyth::pyth_test {
             100
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_WH_MSG], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_WH_MSG], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65562, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65562, location = oracle::oracle)]
     fun test_accumulator_invalid_major_version(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
@@ -993,7 +993,7 @@ module pyth::pyth_test {
             100
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_MAJOR_VERSION], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_MAJOR_VERSION], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
@@ -1005,20 +1005,20 @@ module pyth::pyth_test {
             100
         );
 
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_INCREASED_MINOR_VERSION], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_INCREASED_MINOR_VERSION], coins);
         let coins_second_call = coin::mint(100, &mint_capability);
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_EXTRA_PAYLOAD], coins_second_call);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_EXTRA_PAYLOAD], coins_second_call);
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65539, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65539, location = oracle::oracle)]
     fun test_accumulator_invalid_data_source(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(cedra_framework, vector[data_source::new(
             2, // correct emitter chain is 1
             external_address::from_bytes(x"71f8dcb863d176e2c420ad6610cf687359612b6fb392e0642b0ca6b1f186aa3b")
         )], 100);
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
@@ -1030,21 +1030,21 @@ module pyth::pyth_test {
             0
         );
         let single_update_fee = 50;
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             TEST_ACCUMULATOR,
         ]) == single_update_fee, 1);
 
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             TEST_ACCUMULATOR,
             TEST_ACCUMULATOR,
         ]) == single_update_fee * 2, 1);
 
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             TEST_ACCUMULATOR,
             TEST_ACCUMULATOR_3_MSGS,
         ]) == single_update_fee * 4, 1);
 
-        assert!(pyth::get_update_fee(&vector[
+        assert!(oracle::get_update_fee(&vector[
             TEST_ACCUMULATOR,
             TEST_ACCUMULATOR_3_MSGS,
             x"deaddeaddead", // random non-accumulator data
@@ -1055,14 +1055,14 @@ module pyth::pyth_test {
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65565, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65565, location = oracle::oracle)]
     fun test_accumulator_invalid_proof(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
             data_sources_for_test_vaa(),
             100
         );
-        pyth::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_PROOF_1], coins);
+        oracle::update_price_feeds(vector[TEST_ACCUMULATOR_INVALID_PROOF_1], coins);
         cleanup_test(burn_capability, mint_capability);
     }
 
@@ -1087,21 +1087,21 @@ module pyth::pyth_test {
         coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
-        assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
+        assert!(oracle::get_update_fee(&TEST_VAAS) == update_fee, 1);
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == 0, 1);
 
         // Update the price feeds using the funder
-        pyth::update_price_feeds_with_funder(&funder, TEST_VAAS);
+        oracle::update_price_feeds_with_funder(&funder, TEST_VAAS);
 
         // Check that the price feeds are now cached
         check_price_feeds_cached(&get_mock_price_infos());
 
         // Check that the funder's balance has decreased by the update_fee amount
-        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - oracle::get_update_fee(&TEST_VAAS), 1);
 
         // Check that the amount has been transferred to the Pyth contract
-        assert!(coin::balance<CedraCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == oracle::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -1119,12 +1119,12 @@ module pyth::pyth_test {
         coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
-        assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
+        assert!(oracle::get_update_fee(&TEST_VAAS) == update_fee, 1);
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == 0, 1);
 
         // Update the price feeds using the funder
-        pyth::update_price_feeds_with_funder(&funder, TEST_VAAS);
+        oracle::update_price_feeds_with_funder(&funder, TEST_VAAS);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -1139,13 +1139,13 @@ module pyth::pyth_test {
             let price = price_feed::get_price(price_feed);
 
             let price_identifier = *price_feed::get_price_identifier(price_feed);
-            assert!(pyth::price_feed_exists(price_identifier), 1);
-            let cached_price = pyth::get_price(price_identifier);
+            assert!(oracle::price_feed_exists(price_identifier), 1);
+            let cached_price = oracle::get_price(price_identifier);
 
             assert!(cached_price == price, 1);
 
             let ema_price = price_feed::get_ema_price(price_feed);
-            let cached_ema_price = pyth::get_ema_price(price_identifier);
+            let cached_ema_price = oracle::get_ema_price(price_identifier);
 
             assert!(cached_ema_price == ema_price, 1);
 
@@ -1164,12 +1164,12 @@ module pyth::pyth_test {
         let i = 0;
         while (i < vector::length(&updates)) {
             let price_feed = price_info::get_price_feed(vector::borrow(&updates, i));
-            assert!(!pyth::price_feed_exists(*price_feed::get_price_identifier(price_feed)), 1);
+            assert!(!oracle::price_feed_exists(*price_feed::get_price_identifier(price_feed)), 1);
             i = i + 1;
         };
 
         // Submit the updates
-        pyth::update_cache(updates);
+        oracle::update_cache(updates);
 
         // Check that the price feeds are now cached
         check_price_feeds_cached(&updates);
@@ -1196,10 +1196,10 @@ module pyth::pyth_test {
                     ema_price,
             )
         );
-        pyth::update_cache(vector<PriceInfo>[update]);
+        oracle::update_cache(vector<PriceInfo>[update]);
 
         // Check that we can retrieve the current price
-        assert!(pyth::get_price(price_identifier) == price, 1);
+        assert!(oracle::get_price(price_identifier) == price, 1);
 
         // Attempt to update the price with an update older than the current cached one
         let old_price = price::new(i64::new(1243, true), 9802, i64::new(6, false), timestamp - 200);
@@ -1213,11 +1213,11 @@ module pyth::pyth_test {
                     old_ema_price,
             )
         );
-        pyth::update_cache(vector<PriceInfo>[old_update]);
+        oracle::update_cache(vector<PriceInfo>[old_update]);
 
         // Confirm that the current price and ema price didn't change
-        assert!(pyth::get_price(price_identifier) == price, 1);
-        assert!(pyth::get_ema_price(price_identifier) == ema_price, 1);
+        assert!(oracle::get_price(price_identifier) == price, 1);
+        assert!(oracle::get_ema_price(price_identifier) == ema_price, 1);
 
         // Update the cache with a fresh update
         let fresh_price = price::new(i64::new(4857, true), 9979, i64::new(243, false), timestamp + 200);
@@ -1231,18 +1231,18 @@ module pyth::pyth_test {
                     fresh_ema_price,
             )
         );
-        pyth::update_cache(vector<PriceInfo>[fresh_update]);
+        oracle::update_cache(vector<PriceInfo>[fresh_update]);
 
         // Confirm that the current price was updated
-        assert!(pyth::get_price(price_identifier) == fresh_price, 1);
-        assert!(pyth::get_ema_price(price_identifier) == fresh_ema_price, 1);
+        assert!(oracle::get_price(price_identifier) == fresh_price, 1);
+        assert!(oracle::get_ema_price(price_identifier) == fresh_ema_price, 1);
 
         cleanup_test(burn_capability, mint_capability);
         coin::destroy_zero(coins);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 524292, location = pyth::pyth)]
+    #[expected_failure(abort_code = 524292, location = oracle::oracle)]
     fun test_stale_price_threshold_exceeded(cedra_framework: &signer) {
         let stale_price_threshold = 500;
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
@@ -1260,26 +1260,26 @@ module pyth::pyth_test {
                     price::new(i64::new(1536, true), 869, i64::new(100, false), 1257212500),
             )
         );
-        pyth::update_cache(vector<PriceInfo>[update]);
-        assert!(pyth::get_price(price_identifier) == price, 1);
+        oracle::update_cache(vector<PriceInfo>[update]);
+        assert!(oracle::get_price(price_identifier) == price, 1);
 
         // Now advance the clock on the target chain, until the age of the cached update exceeds the
         // stale_price_threshold.
         timestamp::update_global_time_for_test_secs(current_timestamp + stale_price_threshold);
 
         // Check that we can access the price if we increase the threshold by 1
-        assert!(pyth::get_price_no_older_than(
-            price_identifier, pyth::get_stale_price_threshold_secs() + 1) == price, 1);
+        assert!(oracle::get_price_no_older_than(
+            price_identifier, oracle::get_stale_price_threshold_secs() + 1) == price, 1);
 
         // However, retrieving the latest price fails
-        assert!(pyth::get_price(price_identifier) == price, 1);
+        assert!(oracle::get_price(price_identifier) == price, 1);
 
         cleanup_test(burn_capability, mint_capability);
         coin::destroy_zero(coins);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 524292, location = pyth::pyth)]
+    #[expected_failure(abort_code = 524292, location = oracle::oracle)]
     fun test_stale_price_threshold_exceeded_ema(cedra_framework: &signer) {
         let stale_price_threshold = 500;
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, stale_price_threshold, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
@@ -1297,28 +1297,28 @@ module pyth::pyth_test {
                     ema_price,
             )
         );
-        pyth::update_cache(vector<PriceInfo>[update]);
+        oracle::update_cache(vector<PriceInfo>[update]);
 
         // Check that the EMA price has been updated
-        assert!(pyth::get_ema_price(price_identifier) == ema_price, 1);
+        assert!(oracle::get_ema_price(price_identifier) == ema_price, 1);
 
         // Now advance the clock on the target chain, until the age of the cached update exceeds the
         // stale_price_threshold.
         timestamp::update_global_time_for_test_secs(current_timestamp + stale_price_threshold);
 
         // Check that we can access the EMA price if we increase the threshold by 1
-        assert!(pyth::get_ema_price_no_older_than(
-            price_identifier, pyth::get_stale_price_threshold_secs() + 1) == ema_price, 1);
+        assert!(oracle::get_ema_price_no_older_than(
+            price_identifier, oracle::get_stale_price_threshold_secs() + 1) == ema_price, 1);
 
         // However, retrieving the latest EMA price fails
-        assert!(pyth::get_ema_price(price_identifier) == ema_price, 1);
+        assert!(oracle::get_ema_price(price_identifier) == ema_price, 1);
 
         cleanup_test(burn_capability, mint_capability);
         coin::destroy_zero(coins);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 65541, location = pyth::pyth)]
+    #[expected_failure(abort_code = 65541, location = oracle::oracle)]
     fun test_update_price_feeds_if_fresh_invalid_length(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 0);
 
@@ -1332,7 +1332,7 @@ module pyth::pyth_test {
         let publish_times = vector[
             734639463
         ];
-        pyth::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
+        oracle::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
@@ -1352,7 +1352,7 @@ module pyth::pyth_test {
         let publish_times = vector[
             1663680745, 1663680730, 1663680760, 1663680720
         ];
-        pyth::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
+        oracle::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
 
         // Check that the cache has been updated
         let expected = get_mock_price_infos();
@@ -1373,9 +1373,9 @@ module pyth::pyth_test {
         coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
-        assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
+        assert!(oracle::get_update_fee(&TEST_VAAS) == update_fee, 1);
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == 0, 1);
 
         // Update the price feeds using the funder
         let bytes = TEST_VAAS;
@@ -1388,27 +1388,27 @@ module pyth::pyth_test {
         let publish_times = vector[
             1663680790, 1663680730, 1663680760, 1663680720
         ];
-        pyth::update_price_feeds_if_fresh_with_funder(&funder, bytes, price_identifiers, publish_times);
+        oracle::update_price_feeds_if_fresh_with_funder(&funder, bytes, price_identifiers, publish_times);
 
         // Check that the price feeds are now cached
         check_price_feeds_cached(&get_mock_price_infos());
 
         // Check that the funder's balance has decreased by the update_fee amount
-        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - oracle::get_update_fee(&TEST_VAAS), 1);
 
         // Check that the amount has been transferred to the Pyth contract
-        assert!(coin::balance<CedraCoin>(@pyth) == pyth::get_update_fee(&TEST_VAAS), 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == oracle::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 524295, location = pyth::pyth)]
+    #[expected_failure(abort_code = 524295, location = oracle::oracle)]
     fun test_update_price_feeds_if_fresh_stale_data(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 1, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", data_sources_for_test_vaa(), 50, 50);
 
         // First populate the cache
-        pyth::update_cache(get_mock_price_infos());
+        oracle::update_cache(get_mock_price_infos());
 
         // Now attempt to update the price feeds with publish_times that are older than those we have cached
         // This should abort with error::no_fresh_data()
@@ -1422,13 +1422,13 @@ module pyth::pyth_test {
         let publish_times = vector[
             67, 35, 26, 64
         ];
-        pyth::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
+        oracle::update_price_feeds_if_fresh(bytes, price_identifiers, publish_times, coins);
 
         cleanup_test(burn_capability, mint_capability);
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 524295, location = pyth::pyth)]
+    #[expected_failure(abort_code = 524295, location = oracle::oracle)]
     fun test_update_price_feeds_if_fresh_with_funder_stale_data(cedra_framework: &signer) {
         let update_fee = 50;
         let initial_balance = 75;
@@ -1440,12 +1440,12 @@ module pyth::pyth_test {
         coin::register<CedraCoin>(&funder);
         coin::deposit(funder_addr, coins);
 
-        assert!(pyth::get_update_fee(&TEST_VAAS) == update_fee, 1);
+        assert!(oracle::get_update_fee(&TEST_VAAS) == update_fee, 1);
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance, 1);
-        assert!(coin::balance<CedraCoin>(@pyth) == 0, 1);
+        assert!(coin::balance<CedraCoin>(@oracle) == 0, 1);
 
         // First populate the cache
-        pyth::update_cache(get_mock_price_infos());
+        oracle::update_cache(get_mock_price_infos());
 
         // Now attempt to update the price feeds with publish_times that are older than those we have cached
         // This should abort with error::no_fresh_data()
@@ -1459,7 +1459,7 @@ module pyth::pyth_test {
         let publish_times = vector[
             100, 76, 29, 64
         ];
-        pyth::update_price_feeds_if_fresh_with_funder(&funder, bytes, price_identifiers, publish_times);
+        oracle::update_price_feeds_if_fresh_with_funder(&funder, bytes, price_identifiers, publish_times);
 
         cleanup_test(burn_capability, mint_capability);
     }

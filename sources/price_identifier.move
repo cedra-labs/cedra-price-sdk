@@ -1,6 +1,6 @@
-module pyth::price_identifier {
+module oracle::price_identifier {
     use std::vector;
-    use pyth::error;
+    use oracle::error;
 
     const IDENTIFIER_BYTES_LENGTH: u64 = 32;
 

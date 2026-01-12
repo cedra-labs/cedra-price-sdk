@@ -1,7 +1,7 @@
-module pyth::merkle {
+module oracle::merkle {
     use std::vector;
-    use pyth::keccak160;
-    use pyth::keccak160::Hash;
+    use oracle::keccak160;
+    use oracle::keccak160::Hash;
 
     const LEAF_PREFIX: u8 = 0;
     const NODE_PREFIX: u8 = 1;

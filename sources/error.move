@@ -1,6 +1,6 @@
 /// Constructors for all expected abort codes thrown by the Pyth contract.
 /// Each error is in the appropiate error category.
-module pyth::error {
+module oracle::error {
     use std::error;
 
     public fun negative_value(): u64 {

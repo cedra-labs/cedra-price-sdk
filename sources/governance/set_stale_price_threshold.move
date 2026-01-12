@@ -1,9 +1,9 @@
-module pyth::set_stale_price_threshold {
+module oracle::set_stale_price_threshold {
     use cedra_message::cursor;
-    use pyth::deserialize;
-    use pyth::state;
+    use oracle::deserialize;
+    use oracle::state;
 
-    friend pyth::governance;
+    friend oracle::governance;
 
     struct SetStalePriceThreshold {
         threshold: u64,

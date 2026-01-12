@@ -1,9 +1,9 @@
-module pyth::deserialize {
+module oracle::deserialize {
     use cedra_message::deserialize;
     use cedra_message::u16;
     use cedra_message::u32;
     use cedra_message::cursor::{Cursor};
-    use pyth::i64::{Self, I64};
+    use oracle::i64::{Self, I64};
 
     #[test_only]
     use cedra_message::cursor::{Self};

@@ -1,8 +1,8 @@
-module pyth::governance_instruction {
+module oracle::governance_instruction {
     use cedra_message::cursor;
-    use pyth::deserialize;
-    use pyth::error;
-    use pyth::governance_action::{Self, GovernanceAction};
+    use oracle::deserialize;
+    use oracle::error;
+    use oracle::governance_action::{Self, GovernanceAction};
     use cedra_message::u16;
 
     const MAGIC: vector<u8> = x"5054474d"; // "PTGM": Pyth Governance Message
@@ -64,21 +64,21 @@ module pyth::governance_instruction {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65556, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65556, location = oracle::governance_instruction)]
     fun test_from_byte_vec_invalid_magic() {
         let bytes = x"5054474eb01087a85361f738f19454e66664d3c9";
         destroy(from_byte_vec(bytes));
     }
 
     #[test]
-    #[expected_failure(abort_code = 65548, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65548, location = oracle::governance_instruction)]
     fun test_from_byte_vec_invalid_module() {
         let bytes = x"5054474db00187a85361f738f19454e66664d3c9";
         destroy(from_byte_vec(bytes));
     }
 
     #[test]
-    #[expected_failure(abort_code = 65548, location = pyth::governance_instruction)]
+    #[expected_failure(abort_code = 65548, location = oracle::governance_instruction)]
     fun test_from_byte_vec_invalid_target_chain_id() {
         let bytes = x"5054474db00187a85361f738f19454e66664d3c9";
         destroy(from_byte_vec(bytes));

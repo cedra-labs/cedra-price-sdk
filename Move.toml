@@ -12,11 +12,11 @@ CedraMessage = { git = "https://github.com/cedra-labs/cedra-messaging-protocol.g
 Deployer = { git = "https://github.com/cedra-labs/cedra-package-deployer.git", rev = "c866d40d139ce4a35f66ca93986be6c69cce31e3" }
 
 [addresses]
-pyth = "0xee94a861cf65a75f28ca44b880260108e1364a7577a9eaf6850c5b187658acc1"
+oracle = "0xee94a861cf65a75f28ca44b880260108e1364a7577a9eaf6850c5b187658acc1"
 deployer = "c745ffa4f97fa9739fae0cb173996f70bb8e4b0310fa781ccca2f7dc13f7db06"
 cedra_message = "c745ffa4f97fa9739fae0cb173996f70bb8e4b0310fa781ccca2f7dc13f7db06"
 
 [dev-addresses]
-pyth = "_"
+oracle = "_"
 deployer = "_"
 cedra_message = "_"

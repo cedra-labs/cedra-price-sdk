@@ -1,5 +1,5 @@
-module pyth::i64 {
-    use pyth::error;
+module oracle::i64 {
+    use oracle::error;
 
     const MAX_POSITIVE_MAGNITUDE: u64 = (1 << 63) - 1;
     const MAX_NEGATIVE_MAGNITUDE: u64 = (1 << 63);
@@ -76,7 +76,7 @@ module pyth::i64 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65557, location = pyth::i64)]
+    #[expected_failure(abort_code = 65557, location = oracle::i64)]
     fun test_magnitude_too_large_positive() {
         new(0x8000000000000000, false);
     }
@@ -88,7 +88,7 @@ module pyth::i64 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65557, location = pyth::i64)]
+    #[expected_failure(abort_code = 65557, location = oracle::i64)]
     fun test_magnitude_too_large_negative() {
         new(0x8000000000000001, true);
     }
@@ -115,7 +115,7 @@ module pyth::i64 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 196609, location = pyth::i64)]
+    #[expected_failure(abort_code = 196609, location = oracle::i64)]
     fun test_get_magnitude_if_positive_negative() {
         assert!(get_magnitude_if_positive(&new(7686, true)) == 7686, 1);
     }
@@ -126,7 +126,7 @@ module pyth::i64 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 196627, location = pyth::i64)]
+    #[expected_failure(abort_code = 196627, location = oracle::i64)]
     fun test_get_magnitude_if_negative_positive() {
         assert!(get_magnitude_if_negative(&new(7686, false)) == 7686, 1);
     }

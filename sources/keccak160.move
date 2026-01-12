@@ -1,6 +1,6 @@
-module pyth::keccak160 {
+module oracle::keccak160 {
     use std::vector;
-    use pyth::error;
+    use oracle::error;
     use std::cedra_hash;
 
     struct Hash has drop {
@@ -76,7 +76,7 @@ module pyth::keccak160 {
     }
 
     #[test]
-    #[expected_failure(abort_code = 65566, location = pyth::keccak160)]
+    #[expected_failure(abort_code = 65566, location = oracle::keccak160)]
     fun test_new_wrong_size() {
         new(vector[1, 2, 3]);
     }

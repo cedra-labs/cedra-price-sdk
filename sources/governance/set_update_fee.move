@@ -1,10 +1,10 @@
-module pyth::set_update_fee {
+module oracle::set_update_fee {
     use cedra_message::cursor;
-    use pyth::deserialize;
+    use oracle::deserialize;
     use std::math64;
-    use pyth::state;
+    use oracle::state;
 
-    friend pyth::governance;
+    friend oracle::governance;
 
     const MAX_U64: u128 = (1 << 64) - 1;
 

@@ -1,4 +1,4 @@
-module pyth::data_source {
+module oracle::data_source {
     use cedra_message::external_address::ExternalAddress;
 
     struct DataSource has copy, drop, store {

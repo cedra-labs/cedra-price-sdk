@@ -1,5 +1,5 @@
 /// A set data structure.
-module pyth::set {
+module oracle::set {
     use std::table::{Self, Table};
     use std::vector;
 

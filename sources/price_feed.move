@@ -1,6 +1,6 @@
-module pyth::price_feed {
-    use pyth::price_identifier::PriceIdentifier;
-    use pyth::price::Price;
+module oracle::price_feed {
+    use oracle::price_identifier::PriceIdentifier;
+    use oracle::price::Price;
 
     /// PriceFeed represents a current aggregate price for a particular product.
     struct PriceFeed has copy, drop, store {

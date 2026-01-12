@@ -1,14 +1,14 @@
-module pyth::contract_upgrade {
+module oracle::contract_upgrade {
     use cedra_message::cursor;
-    use pyth::deserialize;
-    use pyth::contract_upgrade_hash::{Self, Hash};
-    use pyth::state::{Self};
+    use oracle::deserialize;
+    use oracle::contract_upgrade_hash::{Self, Hash};
+    use oracle::state::{Self};
     use std::vector;
     use std::cedra_hash;
     use cedra_framework::code;
-    use pyth::error;
+    use oracle::error;
 
-    friend pyth::governance;
+    friend oracle::governance;
 
     const HASH_LENGTH: u64 = 32;
 
@@ -39,8 +39,8 @@ module pyth::contract_upgrade {
         // The cedra framework does no validation of the metadata, so we include it in the hash.
         assert!(matches_hash(code, metadata_serialized, state::get_contract_upgrade_authorized_hash()), error::invalid_upgrade_hash());
         // Perform the upgrade
-        let pyth = state::pyth_signer();
-        code::publish_package_txn(&pyth, metadata_serialized, code);
+        let oracle = state::pyth_signer();
+        code::publish_package_txn(&oracle, metadata_serialized, code);
     }
 
     fun matches_hash(code: vector<vector<u8>>, metadata_serialized: vector<u8>, hash: Hash): bool {
@@ -56,9 +56,9 @@ module pyth::contract_upgrade {
     }
 }
 
-module pyth::contract_upgrade_hash {
+module oracle::contract_upgrade_hash {
     use std::vector;
-    use pyth::error;
+    use oracle::error;
 
     struct Hash has store, drop {
         hash: vector<u8>,
