@@ -1,0 +1,22 @@
+[package]
+name = "CedraPrice"
+version = "1.0.0"
+upgrade_policy = "compatible"
+
+[dependencies]
+CedraFramework = { git = "https://github.com/cedra-labs/cedra-network", subdir = "cedra-move/framework/cedra-framework/", rev = "6e846b37919bd1c8e773d4248ae221546550596f" }
+MoveStdlib = { git = "https://github.com/cedra-labs/cedra-network", subdir = "cedra-move/framework/move-stdlib/", rev = "6e846b37919bd1c8e773d4248ae221546550596f" }
+CedraStdlib = { git = "https://github.com/cedra-labs/cedra-network", subdir = "cedra-move/framework/cedra-stdlib/", rev = "6e846b37919bd1c8e773d4248ae221546550596f" }
+CedraToken = { git = "https://github.com/cedra-labs/cedra-network", subdir = "cedra-move/framework/cedra-token/", rev = "6e846b37919bd1c8e773d4248ae221546550596f" }
+Wormhole = { git = "https://github.com/cedra-labs/cedra-messaging-protocol.git", subdir = "wormhole", rev = "60e793830a8b59ef986a48b387e24bd1d30f4b76" }
+Deployer = { git = "https://github.com/cedra-labs/cedra-package-deployer.git", rev = "c866d40d139ce4a35f66ca93986be6c69cce31e3" }
+
+[addresses]
+pyth = "_"
+deployer = "_"
+wormhole = "_"
+
+[dev-addresses]
+pyth = "0xee94a861cf65a75f28ca44b880260108e1364a7577a9eaf6850c5b187658acc1"
+deployer = "c745ffa4f97fa9739fae0cb173996f70bb8e4b0310fa781ccca2f7dc13f7db06"
+wormhole = "c745ffa4f97fa9739fae0cb173996f70bb8e4b0310fa781ccca2f7dc13f7db06"
