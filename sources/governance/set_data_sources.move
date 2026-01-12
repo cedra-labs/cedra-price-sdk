@@ -1,7 +1,7 @@
 module pyth::set_data_sources {
-    use wormhole::cursor;
+    use cedra_message::cursor;
     use pyth::deserialize;
-    use wormhole::external_address::{Self};
+    use cedra_message::external_address::{Self};
     use pyth::data_source::{Self, DataSource};
     use pyth::state;
     use std::vector;

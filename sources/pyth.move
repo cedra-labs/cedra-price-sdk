@@ -10,12 +10,12 @@ module pyth::pyth {
     use pyth::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
     use pyth::deserialize::{Self};
-    use wormhole::cursor::{Self, Cursor};
+    use cedra_message::cursor::{Self, Cursor};
     use std::vector;
     use pyth::state;
-    use wormhole::vaa;
-    use wormhole::u16;
-    use wormhole::external_address;
+    use cedra_message::vaa;
+    use cedra_message::u16;
+    use cedra_message::external_address;
     use std::account;
     use std::signer;
     use deployer::deployer;
@@ -570,10 +570,10 @@ module pyth::pyth_test {
     use pyth::data_source::{Self, DataSource};
     use cedra_framework::timestamp;
     use std::vector;
-    use wormhole::external_address;
+    use cedra_message::external_address;
     use std::account;
     use std::signer;
-    use wormhole::wormhole;
+    use cedra_message::cedra_message;
 
     #[test_only]
     fun setup_test(
@@ -584,8 +584,8 @@ module pyth::pyth_test {
         data_sources: vector<DataSource>,
         update_fee: u64,
         to_mint: u64): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
-        // Initialize wormhole with a large message collection fee
-        wormhole::wormhole_test::setup(100000);
+        // Initialize cedra_message with a large message collection fee
+        cedra_message::wormhole_test::setup(100000);
 
         // Set the current time
         timestamp::update_global_time_for_test_secs(1663680745);
@@ -706,7 +706,7 @@ module pyth::pyth_test {
     }
 
     #[test(cedra_framework = @cedra_framework)]
-    #[expected_failure(abort_code = 6, location = wormhole::vaa)]
+    #[expected_failure(abort_code = 6, location = cedra_message::vaa)]
     fun test_update_price_feeds_corrupt_vaa(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_test(cedra_framework, 500, 23, x"5d1f252d5de865279b00c84bce362774c2804294ed53299bc4a0389a5defef92", vector[], 50, 100);
 
@@ -787,7 +787,7 @@ module pyth::pyth_test {
     ): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
         let cedra_framework_account = std::account::create_account_for_test(@cedra_framework);
         std::timestamp::set_time_has_started_for_testing(&cedra_framework_account);
-        wormhole::init_test(
+        cedra_message::init_test(
             22,
             1,
             x"0000000000000000000000000000000000000000000000000000000000000004",

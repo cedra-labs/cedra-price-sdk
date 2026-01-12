@@ -1,7 +1,7 @@
 module pyth::set_governance_data_source {
-    use wormhole::cursor;
+    use cedra_message::cursor;
     use pyth::deserialize;
-    use wormhole::external_address::{Self, ExternalAddress};
+    use cedra_message::external_address::{Self, ExternalAddress};
     use pyth::data_source;
     use pyth::state;
 

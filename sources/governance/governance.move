@@ -1,7 +1,7 @@
 module pyth::governance {
-    use wormhole::vaa::{Self, VAA};
+    use cedra_message::vaa::{Self, VAA};
     use pyth::data_source::{Self};
-    use wormhole::u16;
+    use cedra_message::u16;
     use pyth::governance_instruction;
     use pyth::governance_action;
     use pyth::contract_upgrade;
@@ -63,7 +63,7 @@ module pyth::governance_test {
     use pyth::governance;
     use pyth::contract_upgrade_hash;
     use pyth::state;
-    use wormhole::external_address;
+    use cedra_message::external_address;
     use std::account;
     use std::vector;
 
@@ -74,8 +74,8 @@ module pyth::governance_test {
         governance_emitter_address: vector<u8>,
         update_fee: u64,
     ) {
-        // Initialize wormhole with a large message collection fee
-        wormhole::wormhole_test::setup(100000);
+        // Initialize cedra_message with a large message collection fee
+        cedra_message::wormhole_test::setup(100000);
 
         // Deploy and initialize a test instance of the Pyth contract
         let deployer = account::create_signer_with_capability(&
@@ -85,7 +85,7 @@ module pyth::governance_test {
     }
 
     #[test]
-    #[expected_failure(abort_code = 6, location = wormhole::vaa)]
+    #[expected_failure(abort_code = 6, location = cedra_message::vaa)]
     fun test_execute_governance_instruction_invalid_vaa() {
         setup_test(50, 24, x"f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf", 100);
         let vaa_bytes = x"6c436741b108";
@@ -158,7 +158,7 @@ module pyth::governance_test {
         // - Sequence number 1
         // - A payload representing a governance instruction with:
         //   - Module number 1
-        //   - Target chain 17 != wormhole test chain ID 22
+        //   - Target chain 17 != cedra_message test chain ID 22
         let vaa_bytes = x"010000000001001ed81e10f8e52e6a7daeca12bf0859c14e8dabed737eaed9a1f8227190a9d11c48d58856713243c5d7de08ed49de4aa1efe7c5e6020c11056802e2d702aa4b2e00527e4f9b000000010032f06413c0148c78916554f134dcd17a7c8029a3a2bda475a4a1182305c53078bf0000000000000001005054474d0102001103001793a28e2e5b4cb88f69e96fb29a8287a88b23f0e99f5502f81744e904da8e3b4d000c9a4066ce1fa26da1c102a3e268abd3ca58e3b3c25f250e6ad9a3525066fbf8b00012f7778ca023d5cbe37449bab2faa2a133fe02b056c2c25605950320df08750f35";
         governance::execute_governance_instruction(vaa_bytes);
     }

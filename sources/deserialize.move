@@ -1,12 +1,12 @@
 module pyth::deserialize {
-    use wormhole::deserialize;
-    use wormhole::u16;
-    use wormhole::u32;
-    use wormhole::cursor::{Cursor};
+    use cedra_message::deserialize;
+    use cedra_message::u16;
+    use cedra_message::u32;
+    use cedra_message::cursor::{Cursor};
     use pyth::i64::{Self, I64};
 
     #[test_only]
-    use wormhole::cursor::{Self};
+    use cedra_message::cursor::{Self};
 
     public fun deserialize_vector(cur: &mut Cursor<u8>, n: u64): vector<u8> {
         deserialize::deserialize_vector(cur, n)

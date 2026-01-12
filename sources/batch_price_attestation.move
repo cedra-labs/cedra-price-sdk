@@ -6,7 +6,7 @@ module pyth::batch_price_attestation {
     use pyth::price_status;
     use pyth::deserialize::{Self};
     use cedra_framework::timestamp;
-    use wormhole::cursor::{Self, Cursor};
+    use cedra_message::cursor::{Self, Cursor};
     use std::vector::{Self};
 
     #[test_only]
@@ -18,7 +18,7 @@ module pyth::batch_price_attestation {
 
     const MAGIC: u64 = 0x50325748; // "P2WH" (Pyth2Wormhole) raw ASCII bytes
 
-    /// @notice This struct is based on the legacy wormhole attester implementation in pythnet_sdk
+    /// @notice This struct is based on the legacy cedra_message attester implementation in pythnet_sdk
     struct BatchPriceAttestation {
         header: Header,
         attestation_size: u64,
