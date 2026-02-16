@@ -39,7 +39,7 @@ module oracle::contract_upgrade {
         // The cedra framework does no validation of the metadata, so we include it in the hash.
         assert!(matches_hash(code, metadata_serialized, state::get_contract_upgrade_authorized_hash()), error::invalid_upgrade_hash());
         // Perform the upgrade
-        let oracle = state::pyth_signer();
+        let oracle = state::oracle_signer();
         code::publish_package_txn(&oracle, metadata_serialized, code);
     }
 

@@ -77,10 +77,10 @@ module oracle::governance_test {
         // Initialize cedra_message with a large message collection fee
         cedra_message::wormhole_test::setup(100000);
 
-        // Deploy and initialize a test instance of the Pyth contract
+        // Deploy and initialize a test instance of the Oracle contract
         let deployer = account::create_signer_with_capability(&
             account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b));
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        let (_oracle, signer_capability) = account::create_resource_account(&deployer, b"oracle");
         oracle::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, vector[], update_fee);
     }
 

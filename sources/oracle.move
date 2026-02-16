@@ -25,10 +25,10 @@ module oracle::oracle {
     use oracle::keccak160;
 
     #[test_only]
-    friend oracle::pyth_test;
+    friend oracle::oracle_test;
 
-    const PYTHNET_ACCUMULATOR_UPDATE_MAGIC: u64 = 1347305813;
-    const ACCUMULATOR_UPDATE_WORMHOLE_VERIFICATION_MAGIC: u64 = 1096111958;
+    const ORACLENET_ACCUMULATOR_UPDATE_MAGIC: u64 = 1347305813;
+    const ACCUMULATOR_UPDATE_CEDRA_MESSAGE_VERIFICATION_MAGIC: u64 = 1096111958;
 
 
     // -----------------------------------------------------------------------------
@@ -140,8 +140,33 @@ module oracle::oracle {
         let fee = coin::withdraw<CedraCoin>(account, update_fee);
         coin::deposit(@oracle, fee);
     }
-// Pyth uses an uses an on-demand update model, where consumers need to update the
-/// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
+
+    /// Temp test method that allows updating multiple prices (batch version).
+    public entry fun update_price_feed_tmp_batch(account: &signer, messages: vector<vector<u8>>) {
+        assert!(signer::address_of(account) == @deployer, error::unauthorized_upgrade());
+
+        let updates: vector<PriceInfo> = vector[];
+
+        let i = 0;
+        let len = vector::length(&messages);
+        while (i < len) {
+            let message = *vector::borrow(&messages, i);
+            let update = parse_accumulator_update_message(message);
+                vector::push_back(&mut updates, update);
+        i = i + 1;
+        };
+
+        update_cache(updates);
+
+    let update_fee =
+        state::get_base_update_fee() * (vector::length(&messages) as u64);
+
+    let fee = coin::withdraw<CedraCoin>(account, update_fee);
+    coin::deposit(@oracle, fee);
+}
+
+// oracle uses an uses an on-demand update model, where consumers need to update the
+/// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand.
 
     /// Update the cached price feeds with the data in the given VAAs. This is a
     /// convenience wrapper around update_price_feeds(), which allows you to update the price feeds
@@ -152,11 +177,11 @@ module oracle::oracle {
     /// you need to call an entry function.
     ///
     /// This function will charge an update fee, transferring some CedraCoin's
-    /// from the given funder account to the Pyth contract. The amount of coins that will be transferred
+    /// from the given funder account to the oracle contract. The amount of coins that will be transferred
     /// to perform this update can be queried with get_update_fee(&vaas). The signer must have sufficient
     /// account balance to pay this fee, otherwise the transaction will abort.
     ///
-    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand#fees
     public entry fun update_price_feeds_with_funder(account: &signer, vaas: vector<vector<u8>>) {
         let total_updates = 0;
         // Update the price feed from each VAA
@@ -174,12 +199,12 @@ module oracle::oracle {
     ///
     /// The javascript https://github.com/oracle-network/oracle-js/tree/main/oracle-cedra-js package
     /// should be used to fetch these VAAs from the Price Service. More information about this
-    /// process can be found at https://docs.oracle.network/documentation/pythnet-price-feeds.
+    /// process can be found at https://docs.oracle.network/documentation/oraclenet-price-feeds.
     ///
     /// The given fee must contain a sufficient number of coins to pay the update fee for the given vaas.
     /// The update fee amount can be queried by calling get_update_fee(&vaas).
     ///
-    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand#fees
     public fun update_price_feeds(vaas: vector<vector<u8>>, fee: Coin<CedraCoin>) {
         let total_updates = 0;
         // Update the price feed from each VAA
@@ -206,9 +231,9 @@ module oracle::oracle {
     fun parse_accumulator_merkle_root_from_vaa_payload(message: vector<u8>): keccak160::Hash {
         let msg_payload_cursor = cursor::init(message);
         let payload_type = deserialize::deserialize_u32(&mut msg_payload_cursor);
-        assert!(payload_type == ACCUMULATOR_UPDATE_WORMHOLE_VERIFICATION_MAGIC, error::invalid_wormhole_message());
+        assert!(payload_type == ACCUMULATOR_UPDATE_CEDRA_MESSAGE_VERIFICATION_MAGIC, error::invalid_cedra_message_message());
         let wh_message_payload_type = deserialize::deserialize_u8(&mut msg_payload_cursor);
-        assert!(wh_message_payload_type == 0, error::invalid_wormhole_message()); // Merkle variant
+        assert!(wh_message_payload_type == 0, error::invalid_cedra_message_message()); // Merkle variant
         let _merkle_root_slot = deserialize::deserialize_u64(&mut msg_payload_cursor);
         let _merkle_root_ring_size = deserialize::deserialize_u32(&mut msg_payload_cursor);
         let merkle_root_hash = deserialize::deserialize_vector(&mut msg_payload_cursor, 20);
@@ -230,7 +255,6 @@ module oracle::oracle {
         let publish_time = deserialize::deserialize_u64(&mut message_cur);
         let ema_price = deserialize::deserialize_i64(&mut message_cur);
         let ema_conf = deserialize::deserialize_u64(&mut message_cur);
-        let current_time = timestamp::now_seconds();
         let price_info = price_info::new(
             timestamp::now_seconds(), // not used anywhere kept for backward compatibility
             timestamp::now_seconds(),
@@ -298,7 +322,7 @@ module oracle::oracle {
         let cur = cursor::init(vaa);
         let header: u64 = deserialize::deserialize_u32(&mut cur);
         let total_updates;
-        let updates = if (header == PYTHNET_ACCUMULATOR_UPDATE_MAGIC) {
+        let updates = if (header == ORACLENET_ACCUMULATOR_UPDATE_MAGIC) {
             let result = parse_and_verify_accumulator_message(&mut cur);
             total_updates = vector::length(&result);
             result
@@ -422,11 +446,11 @@ module oracle::oracle {
     /// Get the latest available price cached for the given price identifier, if that price is
     /// no older than the stale price threshold.
     ///
-    /// Please refer to the documentation at https://docs.oracle.network/documentation/pythnet-price-feeds/best-practices for
+    /// Please refer to the documentation at https://docs.oracle.network/documentation/oraclenet-price-feeds/best-practices for
     /// how to how this price safely.
     ///
-    /// Important: Pyth uses an on-demand update model, where consumers need to update the
-    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
+    /// Important: oracle uses an on-demand update model, where consumers need to update the
+    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand.
     /// get_price() is likely to abort unless you call update_price_feeds() to update the cached price
     /// beforehand, as the cached prices may be older than the stale price threshold.
     ///
@@ -501,8 +525,8 @@ module oracle::oracle {
     /// Get the latest available exponentially moving average price cached for the given
     /// price identifier, if that price is no older than the stale price threshold.
     ///
-    /// Important: Pyth uses an on-demand update model, where consumers need to update the
-    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand.
+    /// Important: oracle uses an on-demand update model, where consumers need to update the
+    /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand.
     /// get_ema_price() is likely to abort unless you call update_price_feeds() to update the cached price
     /// beforehand, as the cached prices may be older than the stale price threshold.
     public fun get_ema_price(price_identifier: PriceIdentifier): Price {
@@ -533,14 +557,14 @@ module oracle::oracle {
 
     /// Get the number of CedraCoin's required to perform the given price updates.
     ///
-    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/pythnet-price-feeds/on-demand#fees
+    /// Please read more information about the update fee here: https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand#fees
     public fun get_update_fee(update_data: &vector<vector<u8>>): u64 {
         let i = 0;
         let total_updates = 0;
         while (i < vector::length(update_data)) {
             let cur = cursor::init(*vector::borrow(update_data, i));
             let header: u64 = deserialize::deserialize_u32(&mut cur);
-            if (header == PYTHNET_ACCUMULATOR_UPDATE_MAGIC) {
+            if (header == ORACLENET_ACCUMULATOR_UPDATE_MAGIC) {
                 //TODO: this may be expensive and can be optimized by not verifying the messages
                 let updates = parse_and_verify_accumulator_message(&mut cur);
                 total_updates = total_updates + vector::length(&updates);
@@ -558,11 +582,12 @@ module oracle::oracle {
 // -----------------------------------------------------------------------------
 // Tests
 #[test_only]
-module oracle::pyth_test {
+module oracle::oracle_test {
     use oracle::oracle;
     use oracle::price_identifier::{Self};
     use oracle::price_info::{Self, PriceInfo};
     use oracle::price_feed::{Self};
+    use oracle::state;
     use cedra_framework::coin::{Self, Coin, BurnCapability, MintCapability};
     use cedra_framework::cedra_coin::{Self, CedraCoin};
     use oracle::i64;
@@ -584,19 +609,20 @@ module oracle::pyth_test {
         data_sources: vector<DataSource>,
         update_fee: u64,
         to_mint: u64): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
+        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         // Initialize cedra_message with a large message collection fee
         cedra_message::wormhole_test::setup(100000);
 
         // Set the current time
         timestamp::update_global_time_for_test_secs(1663680745);
 
-        // Deploy and initialize a test instance of the Pyth contract
+        // Deploy and initialize a test instance of the oracle contract
         let deployer = account::create_signer_with_capability(&
             account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b));
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        let (oracle, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+
         oracle::init_test(signer_capability, stale_price_threshold, governance_emitter_chain_id, governance_emitter_address, data_sources, update_fee);
 
-        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         let coins = coin::mint(to_mint, &mint_capability);
         (burn_capability, mint_capability, coins)
     }
@@ -785,6 +811,8 @@ module oracle::pyth_test {
         data_sources: vector<DataSource>,
         to_mint: u64
     ): (BurnCapability<CedraCoin>, MintCapability<CedraCoin>, Coin<CedraCoin>) {
+        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
+
         let cedra_framework_account = std::account::create_account_for_test(@cedra_framework);
         std::timestamp::set_time_has_started_for_testing(&cedra_framework_account);
         cedra_message::init_test(
@@ -798,11 +826,11 @@ module oracle::pyth_test {
         // Set the current time
         timestamp::update_global_time_for_test_secs(1687276659);
 
-        // Deploy and initialize a test instance of the Pyth contract
+        // Deploy and initialize a test instance of the oracle contract
         let deployer = account::create_signer_with_capability(
             &account::create_test_signer_cap(@0x277fa055b6a73c42c0662d5236c65c864ccbf2d4abd21f174a30c8b786eab84b)
         );
-        let (_pyth, signer_capability) = account::create_resource_account(&deployer, b"oracle");
+        let (_oracle, signer_capability) = account::create_resource_account(&deployer, b"oracle");
         oracle::init_test(signer_capability,
             500,
             1,
@@ -810,7 +838,6 @@ module oracle::pyth_test {
             data_sources,
             50);
 
-        let (burn_capability, mint_capability) = cedra_coin::initialize_for_test(cedra_framework);
         let coins = coin::mint(to_mint, &mint_capability);
         (burn_capability, mint_capability, coins)
     }
@@ -973,7 +1000,7 @@ module oracle::pyth_test {
 
     #[test(cedra_framework = @cedra_framework)]
     #[expected_failure(abort_code = 65564, location = oracle::oracle)]
-    fun test_accumulator_invalid_wormhole_message(cedra_framework: &signer) {
+    fun test_accumulator_invalid_cedra_message_message(cedra_framework: &signer) {
         let (burn_capability, mint_capability, coins) = setup_accumulator_test(
             cedra_framework,
             data_sources_for_test_vaa(),
@@ -1100,7 +1127,7 @@ module oracle::pyth_test {
         // Check that the funder's balance has decreased by the update_fee amount
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - oracle::get_update_fee(&TEST_VAAS), 1);
 
-        // Check that the amount has been transferred to the Pyth contract
+        // Check that the amount has been transferred to the oracle contract
         assert!(coin::balance<CedraCoin>(@oracle) == oracle::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
@@ -1396,7 +1423,7 @@ module oracle::pyth_test {
         // Check that the funder's balance has decreased by the update_fee amount
         assert!(coin::balance<CedraCoin>(signer::address_of(&funder)) == initial_balance - oracle::get_update_fee(&TEST_VAAS), 1);
 
-        // Check that the amount has been transferred to the Pyth contract
+        // Check that the amount has been transferred to the oracle contract
         assert!(coin::balance<CedraCoin>(@oracle) == oracle::get_update_fee(&TEST_VAAS), 1);
 
         cleanup_test(burn_capability, mint_capability);
@@ -1463,4 +1490,23 @@ module oracle::pyth_test {
 
         cleanup_test(burn_capability, mint_capability);
     }
+
+    #[test(cedra_framework = @cedra_framework, deployer = @deployer)]
+    fun test_update_price_feed_tmp(cedra_framework: &signer, deployer: &signer) {
+        let (burn_capability, mint_capability, coins) = setup_accumulator_test(
+            cedra_framework,
+            data_sources_for_test_vaa(),
+            50);
+        // Update the price feeds from the VAA
+        // oracle::update_price_feed_tmp(deployer, TEST_ACCUMULATOR);
+
+        // // Check that the cache has been updated
+        // let expected = get_mock_price_infos();
+        // check_price_feeds_cached(&expected);
+
+        coin::destroy_zero(coins);
+
+        cleanup_test(burn_capability, mint_capability);
+}
+
 }

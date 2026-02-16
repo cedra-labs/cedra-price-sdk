@@ -1,28 +1,28 @@
 # Target Chains
 
-This directory includes all implementations of pyth contracts in different chains.
+This directory includes all implementations of oracle contracts in different chains.
 
 Each implementation includes:
 
-- Pyth contract in the target chain native contract development language (rust, move, solidity)
+- Oracle contract in the target chain native contract development language (rust, move, solidity)
 - Utility scripts for managing the contract
-- Sdks required for other developers and dApps to integrate with pyth
+- Sdks required for other developers and dApps to integrate with oracle
 
-# How pyth cross-chain works
+# How oracle cross-chain works
 
 Contracts deployed on other chains accept updates that are signed and published by cedra_message.
 These updates are in one of the two categories:
 
 1. Price feed updates. For example, update the price of BTC/USD to the value of X.
-2. Governance updates. For example, set the pyth update fee to X or upgrade the contract to a new implementation.
+2. Governance updates. For example, set the oracle update fee to X or upgrade the contract to a new implementation.
 
-These messages are generated in pythnet (pyth mainnet network) and pythtest (pyth testnet network) and submitted to the cedra_message program that is published on these chains.
+These messages are generated in oraclenet (oracle mainnet network) and oracletest (oracle testnet network) and submitted to the cedra_message program that is published on these chains.
 Then the cedra_message network signs these messages and produces a VAA that can be relayed and consumed in contracts on other blockchains.
 
-A basic implementation of pyth on a target chain includes the following pieces of logic:
+A basic implementation of oracle on a target chain includes the following pieces of logic:
 
 1. How to get the price values for a specific price feed (e.g BTC/USD). This usually comes with some helper functions to avoid users consuming old and stale data.
-2. How to update the values of a price feed via cedra_message vaas + bookkeeping on pyth fees
+2. How to update the values of a price feed via cedra_message vaas + bookkeeping on oracle fees
 3. How to parse and process the governance messages and update the contract state
 
 ## What is stored on each contract
@@ -30,17 +30,17 @@ A basic implementation of pyth on a target chain includes the following pieces o
 In terms of contract configuration the following states exist on all the implementations:
 
 1. Price feeds: each contract stores the latest values for each price feed
-2. Wormhole address: cedra_message contract to be used for verifying the VAAs
+2. Cedra_Message address: cedra_message contract to be used for verifying the VAAs
 3. Data sources: The VAAs can be published by address on any chain supported by cedra_message, this configuration specifies which message sources to trust for updating the price feeds
 4. Governance data source: Same as above but for governance updates. Only one single source is accepted at any time.
-   The governance data source for the official pyth deployments are a multisig instance.
+   The governance data source for the official oracle deployments are a multisig instance.
 5. Update fees: How much to charge for each transaction updating the price feeds
 6. Stale price time: How many seconds should be passed to consider a price feed stale
 
-## Wormhole deployments
+## Cedra_Message deployments
 
-In the case that cedra_message is not deployed on a new chain we want to deploy pyth on, we need to deploy cedra_message too.
-The deployment process is chain dependent, but should be very similar to how pyth is deployed on the target chain.
+In the case that cedra_message is not deployed on a new chain we want to deploy oracle on, we need to deploy cedra_message too.
+The deployment process is chain dependent, but should be very similar to how oracle is deployed on the target chain.
 After the initial deployment, we need to make sure cedra_message configuration is also on the latest version.
 This is done by running a set of fixed, known VAAs that update the cedra_message configurations (guardians sets) on all chains.
 

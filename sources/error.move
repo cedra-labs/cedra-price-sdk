@@ -1,4 +1,4 @@
-/// Constructors for all expected abort codes thrown by the Pyth contract.
+/// Constructors for all expected abort codes thrown by the Oracle contract.
 /// Each error is in the appropiate error category.
 module oracle::error {
     use std::error;
@@ -111,7 +111,7 @@ module oracle::error {
         error::invalid_argument(27)
     }
 
-    public fun invalid_wormhole_message(): u64 {
+    public fun invalid_cedra_message_message(): u64 {
         error::invalid_argument(28)
     }
 
