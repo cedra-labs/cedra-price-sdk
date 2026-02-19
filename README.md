@@ -1,13 +1,3 @@
-# Target Chains
-
-This directory includes all implementations of oracle contracts in different chains.
-
-Each implementation includes:
-
-- Oracle contract in the target chain native contract development language (rust, move, solidity)
-- Utility scripts for managing the contract
-- Sdks required for other developers and dApps to integrate with oracle
-
 # How oracle cross-chain works
 
 Contracts deployed on other chains accept updates that are signed and published by cedra_message.
@@ -25,7 +15,7 @@ A basic implementation of oracle on a target chain includes the following pieces
 2. How to update the values of a price feed via cedra_message vaas + bookkeeping on oracle fees
 3. How to parse and process the governance messages and update the contract state
 
-## What is stored on each contract
+## What is stored on the contract
 
 In terms of contract configuration the following states exist on all the implementations:
 
@@ -55,13 +45,3 @@ A general upgrade process has the following steps, these steps can vary slightly
 5. Wait for approval
 6. When the proposal is approved and executed, a governance message will be sent to cedra_message which will result in a VAA
 7. By submitting the VAA to the contract, the implementation will be updated
-
-# Deploying on a new chain:
-
-Deploying a contract on a new chain consists of the following steps:
-
-1. Add the chain configuration via the [contract manager](../contract_manager) (this includes chainId, rpc information, etc.)
-2. [Optional] Deploy the cedra_message contract, if not already deployed.
-3. Deploy and instantiate the contract on the target chain
-4. Make sure the configurations are up-to-date.
-5. Save the contract and chain information via contract manager and commit them inside this repository
