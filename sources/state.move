@@ -35,7 +35,7 @@ module oracle::state {
         fee: u64,
     }
 
-    /// The Pyth contract signer capability
+    /// The Oracle contract signer capability
     struct SignerCapability has key {
         signer_capability: account::SignerCapability,
     }
@@ -159,7 +159,7 @@ module oracle::state {
         last_executed_governance_sequence.sequence = sequence
     }
 
-    public(friend) fun pyth_signer(): signer acquires SignerCapability {
+    public(friend) fun oracle_signer(): signer acquires SignerCapability {
         account::create_signer_with_capability(&borrow_global<SignerCapability>(@oracle).signer_capability)
     }
 
@@ -168,7 +168,7 @@ module oracle::state {
             let ContractUpgradeAuthorized { hash: _ } = move_from<ContractUpgradeAuthorized>(@oracle);
         };
 
-        move_to(&pyth_signer(), ContractUpgradeAuthorized { hash });
+        move_to(&oracle_signer(), ContractUpgradeAuthorized { hash });
     }
 
     public(friend) fun set_governance_data_source(source: DataSource) acquires GovernanceDataSource {

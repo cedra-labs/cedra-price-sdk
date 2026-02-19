@@ -5,7 +5,7 @@ module oracle::governance_instruction {
     use oracle::governance_action::{Self, GovernanceAction};
     use cedra_message::u16;
 
-    const MAGIC: vector<u8> = x"5054474d"; // "PTGM": Pyth Governance Message
+    const MAGIC: vector<u8> = x"5054474d"; // "PTGM": Oracle Governance Message
     const MODULE: u8 = 1;
 
     struct GovernanceInstruction {

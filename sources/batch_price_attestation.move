@@ -16,7 +16,7 @@ module oracle::batch_price_attestation {
     #[test_only]
     use cedra_framework::account;
 
-    const MAGIC: u64 = 0x50325748; // "P2WH" (Pyth2Wormhole) raw ASCII bytes
+    const MAGIC: u64 = 0x50325748; // "P2WH" (Oracle2Cedra_Message) raw ASCII bytes
 
     /// @notice This struct is based on the legacy cedra_message attester implementation in pythnet_sdk
     struct BatchPriceAttestation {
