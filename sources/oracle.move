@@ -125,47 +125,7 @@ module oracle::oracle {
         )
     }
 
-// -----------------------------------------------------------------------------
 // Update the cached prices
-//
-    /// This Temp test method that allow to get prices.
-    public entry fun update_price_feed_tmp(account: &signer, message: vector<u8>) {
-        assert!(signer::address_of(account) == @deployer, error::unauthorized_upgrade());
-
-        let updates: vector<PriceInfo> = vector[];
-        let update = parse_accumulator_update_message(message);
-        vector::push_back(&mut updates, update);
-        update_cache(updates);
-
-        let update_fee = state::get_base_update_fee();
-        let fee = coin::withdraw<CedraCoin>(account, update_fee);
-        coin::deposit(@oracle, fee);
-    }
-
-    /// Temp test method that allows updating multiple prices (batch version).
-    public entry fun update_price_feed_tmp_batch(account: &signer, messages: vector<vector<u8>>) {
-        assert!(signer::address_of(account) == @deployer, error::unauthorized_upgrade());
-
-        let updates: vector<PriceInfo> = vector[];
-
-        let i = 0;
-        let len = vector::length(&messages);
-        while (i < len) {
-            let message = *vector::borrow(&messages, i);
-            let update = parse_accumulator_update_message(message);
-                vector::push_back(&mut updates, update);
-        i = i + 1;
-        };
-
-        update_cache(updates);
-
-    let update_fee =
-        state::get_base_update_fee() * (vector::length(&messages) as u64);
-
-    let fee = coin::withdraw<CedraCoin>(account, update_fee);
-    coin::deposit(@oracle, fee);
-}
-
 // oracle uses an uses an on-demand update model, where consumers need to update the
 /// cached prices before using them. Please read more about this at https://docs.oracle.network/documentation/oraclenet-price-feeds/on-demand.
 
