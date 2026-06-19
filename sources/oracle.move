@@ -29,6 +29,7 @@ module oracle::oracle {
 
     const ORACLENET_ACCUMULATOR_UPDATE_MAGIC: u64 = 1347305813;
     const ACCUMULATOR_UPDATE_CEDRA_MESSAGE_VERIFICATION_MAGIC: u64 = 1096111958;
+    const ORACLE_TIME_OFFSET_MAGIC : u64 = 60000000; // 60 seconds in micro
 
 
     // -----------------------------------------------------------------------------
@@ -255,6 +256,10 @@ module oracle::oracle {
         let publish_time = deserialize::deserialize_u64(&mut message_cur);
         let ema_price = deserialize::deserialize_i64(&mut message_cur);
         let ema_conf = deserialize::deserialize_u64(&mut message_cur);
+
+        let current_time = timestamp::now_microseconds();
+        assert!(publish_time < (current_time + ORACLE_TIME_OFFSET_MAGIC), error::invalid_price_status());
+
         let price_info = price_info::new(
             timestamp::now_seconds(), // not used anywhere kept for backward compatibility
             timestamp::now_seconds(),
